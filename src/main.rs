@@ -38,13 +38,16 @@ mod tests {
     }
 
     #[test]
-    fn test_get_command() {
+    fn test_get_command_attempts_clone() {
         let output = Command::new("cargo")
             .args(&["run", "--", "get", "https://github.com/user/repo"])
             .output()
             .expect("Failed to execute command");
 
-        let stdout = String::from_utf8(output.stdout).unwrap();
-        assert!(stdout.contains("Get command: https://github.com/user/repo"));
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        // The command should attempt to clone and show appropriate output
+        assert!(stderr.contains("Cloning https://github.com/user/repo") || 
+                stderr.contains("remote authentication required") ||
+                stderr.contains("repository not found"));
     }
 }
