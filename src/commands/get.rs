@@ -20,6 +20,18 @@ mod tests {
         assert_eq!(owner, "user");
         assert_eq!(repo, "repo");
     }
+
+    #[test]
+    fn test_parse_github_ssh_url() {
+        let url = "git@github.com:user/repo.git";
+        let result = parse_repository_url(url);
+        
+        assert!(result.is_ok());
+        let (host, owner, repo) = result.unwrap();
+        assert_eq!(host, "github.com");
+        assert_eq!(owner, "user");
+        assert_eq!(repo, "repo");
+    }
 }
 
 fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
@@ -27,8 +39,18 @@ fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
     
     let url = url.strip_suffix(".git").unwrap_or(url);
     
+    // Handle HTTPS URLs
     if url.starts_with("https://github.com/") {
         let path = url.strip_prefix("https://github.com/").unwrap();
+        let parts: Vec<&str> = path.split('/').collect();
+        if parts.len() == 2 {
+            return Ok(("github.com".to_string(), parts[0].to_string(), parts[1].to_string()));
+        }
+    }
+    
+    // Handle SSH URLs
+    if url.starts_with("git@github.com:") {
+        let path = url.strip_prefix("git@github.com:").unwrap();
         let parts: Vec<&str> = path.split('/').collect();
         if parts.len() == 2 {
             return Ok(("github.com".to_string(), parts[0].to_string(), parts[1].to_string()));
