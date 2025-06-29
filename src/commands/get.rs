@@ -45,6 +45,20 @@ mod tests {
         
         assert_eq!(result, "/tmp/neoghq/github.com/user/repo/main");
     }
+
+    #[test]
+    fn test_clone_repository_bare() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let bare_repo_path = temp_dir.path().join("repo.git");
+        
+        // This test will fail until we implement clone_repository_bare
+        let result = clone_repository_bare("https://github.com/octocat/Hello-World.git", &bare_repo_path);
+        
+        assert!(result.is_ok());
+        assert!(bare_repo_path.exists());
+        assert!(bare_repo_path.join("HEAD").exists());
+        assert!(bare_repo_path.join("refs").exists());
+    }
 }
 
 fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
@@ -75,4 +89,21 @@ fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
 
 fn resolve_repository_path(root: &str, host: &str, owner: &str, repo: &str, branch: &str) -> String {
     format!("{}/{}/{}/{}/{}", root, host, owner, repo, branch)
+}
+
+fn clone_repository_bare(url: &str, path: &std::path::Path) -> Result<()> {
+    use std::fs;
+    
+    // Create parent directories if they don't exist
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    
+    // Clone as bare repository
+    let mut builder = git2::build::RepoBuilder::new();
+    builder.bare(true);
+    
+    builder.clone(url, path)?;
+    
+    Ok(())
 }
