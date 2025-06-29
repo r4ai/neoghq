@@ -84,6 +84,29 @@ Key external crates:
 
 ## Development Guidelines
 
+### Test-Driven Development (TDD)
+
+**CRITICAL: All new features MUST be implemented using t_wada's TDD methodology**
+
+1. **TDD Cycle (Red → Green → Refactor)**
+
+   - **Red**: Write a failing test first
+   - **Green**: Write minimal code to make the test pass
+   - **Refactor**: Improve code while keeping tests green
+   - Repeat this cycle for each small increment of functionality
+
+2. **Commit Strategy**
+
+   - Commit frequently at each TDD step
+   - Each commit should represent one complete TDD cycle
+
+3. **Implementation Approach**
+   - Break features into smallest possible increments
+   - Start with the simplest test case
+   - Add complexity gradually through multiple TDD cycles
+   - Never write production code without a failing test first
+   - Always ensure all tests pass before moving to next feature
+
 ### Coding Standards
 
 1. **Naming Conventions**
@@ -101,6 +124,7 @@ Key external crates:
    - Unit tests: Implemented within each module
    - Integration tests: Implemented in `tests/` directory
    - Actual Git operation tests using temporary directories
+   - Follow TDD principles: test first, then implement
 
 ### Build & Test Procedures
 
