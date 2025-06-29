@@ -32,6 +32,19 @@ mod tests {
         assert_eq!(owner, "user");
         assert_eq!(repo, "repo");
     }
+
+    #[test]
+    fn test_resolve_repository_path() {
+        let root = "/tmp/neoghq";
+        let host = "github.com";
+        let owner = "user";
+        let repo = "repo";
+        let branch = "main";
+        
+        let result = resolve_repository_path(root, host, owner, repo, branch);
+        
+        assert_eq!(result, "/tmp/neoghq/github.com/user/repo/main");
+    }
 }
 
 fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
@@ -58,4 +71,8 @@ fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
     }
     
     Err(anyhow!("Invalid URL format"))
+}
+
+fn resolve_repository_path(root: &str, host: &str, owner: &str, repo: &str, branch: &str) -> String {
+    format!("{}/{}/{}/{}/{}", root, host, owner, repo, branch)
 }
