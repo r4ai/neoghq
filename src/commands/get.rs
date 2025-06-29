@@ -59,6 +59,23 @@ mod tests {
         assert!(bare_repo_path.join("HEAD").exists());
         assert!(bare_repo_path.join("refs").exists());
     }
+
+    #[test]
+    fn test_create_worktree() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let bare_repo_path = temp_dir.path().join("repo.git");
+        let worktree_path = temp_dir.path().join("main");
+        
+        // First create a bare repository
+        clone_repository_bare("https://github.com/octocat/Hello-World.git", &bare_repo_path).unwrap();
+        
+        // Now test worktree creation
+        let result = create_worktree(&bare_repo_path, &worktree_path, "main");
+        
+        assert!(result.is_ok());
+        assert!(worktree_path.exists());
+        assert!(worktree_path.join("README").exists());
+    }
 }
 
 fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
@@ -104,6 +121,29 @@ fn clone_repository_bare(url: &str, path: &std::path::Path) -> Result<()> {
     builder.bare(true);
     
     builder.clone(url, path)?;
+    
+    Ok(())
+}
+
+fn create_worktree(bare_repo_path: &std::path::Path, worktree_path: &std::path::Path, branch: &str) -> Result<()> {
+    use git2::Repository;
+    use std::fs;
+    
+    // Create parent directories if they don't exist
+    if let Some(parent) = worktree_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    
+    // Open the bare repository
+    let repo = Repository::open(bare_repo_path)?;
+    
+    // Create worktree
+    let opts = git2::WorktreeAddOptions::new();
+    repo.worktree(
+        branch,
+        worktree_path,
+        Some(&opts)
+    )?;
     
     Ok(())
 }
