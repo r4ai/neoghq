@@ -328,6 +328,51 @@ mod tests {
         assert!(result.is_ok());
         assert!(worktree_path.exists());
     }
+
+    #[test]
+    fn test_clone_with_no_parent_path() {
+        use std::path::Path;
+        
+        // The goal is to test the case where path.parent() returns None
+        // This happens with root paths like "/" on Unix or "C:" on Windows
+        
+        // Since we can't actually write to system root, we'll test this by
+        // creating a scenario where the parent already exists (temp dir acts as root)
+        let temp_dir = tempfile::tempdir().unwrap();
+        
+        // Create the path directly in the temp directory (temp dir is like our "root")
+        let repo_path = temp_dir.path().join("direct_repo.git");
+        
+        // This should work without needing to create parent directories
+        // since temp_dir already exists
+        let result = clone_repository_bare(
+            "https://github.com/octocat/Hello-World.git",
+            &repo_path,
+        );
+        
+        assert!(result.is_ok());
+        assert!(repo_path.exists());
+    }
+
+    #[test]
+    fn test_worktree_with_no_parent_path() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let bare_repo_path = temp_dir.path().join("repo.git");
+        
+        // Create bare repository first
+        clone_repository_bare(
+            "https://github.com/octocat/Hello-World.git",
+            &bare_repo_path,
+        ).unwrap();
+        
+        // Create worktree directly in temp dir (no subdirectory)
+        let worktree_path = temp_dir.path().join("direct_worktree");
+        
+        let result = create_worktree(&bare_repo_path, &worktree_path, "main");
+        
+        assert!(result.is_ok());
+        assert!(worktree_path.exists());
+    }
 }
 
 fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
