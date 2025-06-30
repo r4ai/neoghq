@@ -306,6 +306,28 @@ mod tests {
             std::env::remove_var("NEOGHQ_ROOT");
         }
     }
+
+    #[test]
+    fn test_create_worktree_with_direct_path() {
+        // Test create_worktree with a path that exercises the parent creation logic
+        let temp_dir = tempfile::tempdir().unwrap();
+        let bare_repo_path = temp_dir.path().join("repo.git");
+        
+        // First create a bare repository
+        clone_repository_bare(
+            "https://github.com/octocat/Hello-World.git",
+            &bare_repo_path,
+        )
+        .unwrap();
+
+        // Use a path directly in temp dir (parent definitely exists)
+        let worktree_path = temp_dir.path().join("worktree");
+
+        let result = create_worktree(&bare_repo_path, &worktree_path, "main");
+
+        assert!(result.is_ok());
+        assert!(worktree_path.exists());
+    }
 }
 
 fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
