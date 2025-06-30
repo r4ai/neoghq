@@ -133,7 +133,7 @@ Key external crates:
 cargo build
 
 # Run tests
-cargo test
+cargo llvm-cov
 
 # Release build
 cargo build --release

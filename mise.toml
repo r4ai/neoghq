@@ -1,2 +1,3 @@
 [tools]
+"cargo:cargo-llvm-cov" = "latest"
 rust = "1.87.0"
