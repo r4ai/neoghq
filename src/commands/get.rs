@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 pub fn execute(url: String, branch: Option<String>) -> Result<()> {
     execute_get_command(url, branch)
@@ -168,7 +168,7 @@ mod tests {
     #[test]
     fn test_execute_with_default_root() {
         let temp_dir = tempfile::tempdir().unwrap();
-        
+
         // Set HOME to temp directory and ensure NEOGHQ_ROOT is not set
         unsafe {
             std::env::set_var("HOME", temp_dir.path());
@@ -183,7 +183,9 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify directory structure was created in default location ~/src/repos
-        let default_path = temp_dir.path().join("src/repos/github.com/octocat/Hello-World");
+        let default_path = temp_dir
+            .path()
+            .join("src/repos/github.com/octocat/Hello-World");
         assert!(default_path.exists());
         assert!(default_path.join(".git").exists()); // bare repo
         assert!(default_path.join("main").exists()); // worktree
@@ -198,7 +200,7 @@ mod tests {
     #[test]
     fn test_execute_with_home_directory_expansion() {
         let temp_dir = tempfile::tempdir().unwrap();
-        
+
         // Set HOME environment variable to temp directory
         unsafe {
             std::env::set_var("HOME", temp_dir.path());
@@ -213,7 +215,9 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify directory structure was created in expanded path
-        let expanded_path = temp_dir.path().join("test/repos/github.com/octocat/Hello-World");
+        let expanded_path = temp_dir
+            .path()
+            .join("test/repos/github.com/octocat/Hello-World");
         assert!(expanded_path.exists());
         assert!(expanded_path.join(".git").exists()); // bare repo
         assert!(expanded_path.join("main").exists()); // worktree
@@ -312,7 +316,7 @@ mod tests {
         // Test create_worktree with a path that exercises the parent creation logic
         let temp_dir = tempfile::tempdir().unwrap();
         let bare_repo_path = temp_dir.path().join("repo.git");
-        
+
         // First create a bare repository
         clone_repository_bare(
             "https://github.com/octocat/Hello-World.git",
@@ -331,25 +335,21 @@ mod tests {
 
     #[test]
     fn test_clone_with_no_parent_path() {
-        use std::path::Path;
-        
         // The goal is to test the case where path.parent() returns None
         // This happens with root paths like "/" on Unix or "C:" on Windows
-        
+
         // Since we can't actually write to system root, we'll test this by
         // creating a scenario where the parent already exists (temp dir acts as root)
         let temp_dir = tempfile::tempdir().unwrap();
-        
+
         // Create the path directly in the temp directory (temp dir is like our "root")
         let repo_path = temp_dir.path().join("direct_repo.git");
-        
+
         // This should work without needing to create parent directories
         // since temp_dir already exists
-        let result = clone_repository_bare(
-            "https://github.com/octocat/Hello-World.git",
-            &repo_path,
-        );
-        
+        let result =
+            clone_repository_bare("https://github.com/octocat/Hello-World.git", &repo_path);
+
         assert!(result.is_ok());
         assert!(repo_path.exists());
     }
@@ -358,18 +358,19 @@ mod tests {
     fn test_worktree_with_no_parent_path() {
         let temp_dir = tempfile::tempdir().unwrap();
         let bare_repo_path = temp_dir.path().join("repo.git");
-        
+
         // Create bare repository first
         clone_repository_bare(
             "https://github.com/octocat/Hello-World.git",
             &bare_repo_path,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         // Create worktree directly in temp dir (no subdirectory)
         let worktree_path = temp_dir.path().join("direct_worktree");
-        
+
         let result = create_worktree(&bare_repo_path, &worktree_path, "main");
-        
+
         assert!(result.is_ok());
         assert!(worktree_path.exists());
     }
@@ -378,39 +379,37 @@ mod tests {
     fn test_actual_root_path_handling() {
         // To achieve 100% coverage, we need to test the exact branches
         // where path.parent() returns None
-        
+
         // Create a path that actually returns None for parent()
         let temp_dir = tempfile::tempdir().unwrap();
-        
+
         // This test specifically aims to hit the else branch where
         // no parent directory creation is needed
         let existing_parent = temp_dir.path();
         let target_path = existing_parent.join("repo.git");
-        
-        // The parent (temp_dir) already exists, so the mkdir logic 
+
+        // The parent (temp_dir) already exists, so the mkdir logic
         // should take the "parent exists" path
         assert!(existing_parent.exists());
-        
-        let result = clone_repository_bare(
-            "https://github.com/octocat/Hello-World.git",
-            &target_path,
-        );
-        
+
+        let result =
+            clone_repository_bare("https://github.com/octocat/Hello-World.git", &target_path);
+
         assert!(result.is_ok());
     }
 
     // Helper function to test parent directory logic coverage
     fn test_parent_directory_logic() {
         use std::path::Path;
-        
+
         // Create a path that will return None for parent()
         // In Rust, Path::new("") or Path::new(".") can sometimes return None for parent
         let paths_with_no_parent = vec![
-            Path::new(""),      // Empty path
-            Path::new("/"),     // Root path on Unix
-            Path::new("C:"),    // Drive root on Windows
+            Path::new(""),   // Empty path
+            Path::new("/"),  // Root path on Unix
+            Path::new("C:"), // Drive root on Windows
         ];
-        
+
         let mut found_parentless = false;
         for path in paths_with_no_parent {
             if path.parent().is_none() {
@@ -420,7 +419,7 @@ mod tests {
                 break;
             }
         }
-        
+
         // If no parentless path found, ensure we cover the end of the loop
         if !found_parentless {
             println!("No paths with None parent found");
@@ -430,18 +429,16 @@ mod tests {
     #[test]
     fn test_empty_path_handling() {
         use std::path::Path;
-        
+
         // Test with an empty path - this should return None for parent()
         let empty_path = Path::new("");
         assert!(empty_path.parent().is_none());
-        
+
         // We can test this path even though it will likely fail
         // because it exercises the code branches we need for coverage
-        let result = clone_repository_bare(
-            "https://github.com/octocat/Hello-World.git",
-            &empty_path,
-        );
-        
+        let result =
+            clone_repository_bare("https://github.com/octocat/Hello-World.git", &empty_path);
+
         // We expect this to fail, but the important thing is that
         // the code path with path.parent() == None gets executed
         assert!(result.is_err());
@@ -450,23 +447,24 @@ mod tests {
     #[test]
     fn test_empty_worktree_path_handling() {
         use std::path::Path;
-        
+
         // First create a valid bare repository
         let temp_dir = tempfile::tempdir().unwrap();
         let bare_repo_path = temp_dir.path().join("repo.git");
-        
+
         clone_repository_bare(
             "https://github.com/octocat/Hello-World.git",
             &bare_repo_path,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         // Test with an empty path for worktree - this should return None for parent()
         let empty_path = Path::new("");
         assert!(empty_path.parent().is_none());
-        
+
         // Test create_worktree with empty path to exercise the else branch
         let result = create_worktree(&bare_repo_path, &empty_path, "main");
-        
+
         // We expect this to fail, but it exercises the code path we need
         assert!(result.is_err());
     }
@@ -475,16 +473,13 @@ mod tests {
     fn test_coverage_completion() {
         // This test ensures we understand path behavior for coverage
         test_parent_directory_logic();
-        
+
         // Also test the case where no parentless paths are found
         // by creating a custom scenario
         use std::path::Path;
-        
-        let paths_with_parents = vec![
-            Path::new("some/path"),
-            Path::new("another/nested/path"),
-        ];
-        
+
+        let paths_with_parents = vec![Path::new("some/path"), Path::new("another/nested/path")];
+
         let mut found_parentless = false;
         for path in paths_with_parents {
             if path.parent().is_none() {
@@ -492,45 +487,56 @@ mod tests {
                 break;
             }
         }
-        
+
         // This should trigger the else branch
         if !found_parentless {
             println!("Coverage: No paths with None parent found in secondary check");
         }
-        
+
         assert!(true);
     }
 }
 
 fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
-    use anyhow::anyhow;
-
+    use url::Url;
     let url = url.strip_suffix(".git").unwrap_or(url);
 
     // Handle HTTPS URLs
-    if url.starts_with("https://github.com/") {
-        let path = url.strip_prefix("https://github.com/").unwrap();
-        let parts: Vec<&str> = path.split('/').collect();
-        if parts.len() == 2 {
-            return Ok((
-                "github.com".to_string(),
-                parts[0].to_string(),
-                parts[1].to_string(),
-            ));
-        }
+    if url.starts_with("https://") {
+        let url = Url::parse(url).map_err(|_| anyhow!("Invalid URL format: {url}"))?;
+        let path = url.path().strip_prefix("/").unwrap_or(url.path());
+        let path_parts: Vec<&str> = path.split('/').collect();
+        let host = url
+            .host_str()
+            .ok_or_else(|| anyhow!("Missing host in URL"))?;
+        let owner = path_parts
+            .get(0)
+            .ok_or_else(|| anyhow!("Missing owner in URL: {url}"))?;
+        let repo = path_parts
+            .get(1)
+            .ok_or_else(|| anyhow!("Missing repo in URL: {url}"))?;
+        return Ok((host.to_string(), owner.to_string(), repo.to_string()));
     }
 
     // Handle SSH URLs
-    if url.starts_with("git@github.com:") {
-        let path = url.strip_prefix("git@github.com:").unwrap();
-        let parts: Vec<&str> = path.split('/').collect();
-        if parts.len() == 2 {
-            return Ok((
-                "github.com".to_string(),
-                parts[0].to_string(),
-                parts[1].to_string(),
-            ));
-        }
+    if url.starts_with("git@") {
+        let url_without_prefix = url.strip_prefix("git@").unwrap();
+        let parts: Vec<&str> = url_without_prefix.split(':').collect();
+        let host = parts
+            .get(0)
+            .ok_or_else(|| anyhow!("Missing host in URL: {url}"))?;
+        let owner_and_repo = parts
+            .get(1)
+            .ok_or_else(|| anyhow!("Missing owner and repo in URL: {url}"))?
+            .split("/")
+            .collect::<Vec<_>>();
+        let owner = owner_and_repo
+            .get(0)
+            .ok_or_else(|| anyhow!("Missing owner in URL: {url}"))?;
+        let repo = owner_and_repo
+            .get(1)
+            .ok_or_else(|| anyhow!("Missing repo in URL: {url}"))?;
+        return Ok((host.to_string(), owner.to_string(), repo.to_string()));
     }
 
     Err(anyhow!("Invalid URL format"))
@@ -600,7 +606,8 @@ fn execute_get_command(url: String, branch: Option<String>) -> Result<()> {
 
     // Expand ~ to home directory if needed
     let root = if root.starts_with("~/") {
-        let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+        let home = std::env::var("HOME")
+            .map_err(|_| anyhow!("HOME environment variable is not set"))?;
         root.replace("~", &home)
     } else {
         root
