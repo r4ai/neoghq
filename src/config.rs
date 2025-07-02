@@ -9,23 +9,24 @@ impl Config {
     pub fn new(root: String) -> Self {
         Self { root }
     }
+
+    pub fn load() -> Result<Self> {
+        // Get the neoghq root directory
+        let root = std::env::var("NEOGHQ_ROOT").unwrap_or_else(|_| "~/src/repos".to_string());
+
+        // Expand ~ to home directory if needed
+        let root = if root.starts_with("~/") {
+            let home = std::env::var("HOME")
+                .map_err(|_| anyhow::anyhow!("HOME environment variable is not set"))?;
+            root.replace("~", &home)
+        } else {
+            root
+        };
+
+        Ok(Self::new(root))
+    }
 }
 
-pub fn load_config() -> Result<Config> {
-    // Get the neoghq root directory
-    let root = std::env::var("NEOGHQ_ROOT").unwrap_or_else(|_| "~/src/repos".to_string());
-
-    // Expand ~ to home directory if needed
-    let root = if root.starts_with("~/") {
-        let home = std::env::var("HOME")
-            .map_err(|_| anyhow::anyhow!("HOME environment variable is not set"))?;
-        root.replace("~", &home)
-    } else {
-        root
-    };
-
-    Ok(Config::new(root))
-}
 
 #[cfg(test)]
 mod tests {
@@ -38,13 +39,13 @@ mod tests {
     }
 
     #[test]
-    fn test_load_config_with_neoghq_root() {
+    fn test_config_load_with_neoghq_root() {
         // Set NEOGHQ_ROOT environment variable
         unsafe {
             std::env::set_var("NEOGHQ_ROOT", "/custom/root");
         }
 
-        let config = load_config().unwrap();
+        let config = Config::load().unwrap();
         assert_eq!(config.root, "/custom/root");
 
         // Clean up
@@ -54,7 +55,7 @@ mod tests {
     }
 
     #[test]
-    fn test_load_config_with_default_root() {
+    fn test_config_load_with_default_root() {
         let temp_dir = tempfile::tempdir().unwrap();
 
         // Set HOME and ensure NEOGHQ_ROOT is not set
@@ -63,7 +64,7 @@ mod tests {
             std::env::remove_var("NEOGHQ_ROOT");
         }
 
-        let config = load_config().unwrap();
+        let config = Config::load().unwrap();
         let expected = format!("{}/src/repos", temp_dir.path().display());
         assert_eq!(config.root, expected);
 
@@ -74,7 +75,7 @@ mod tests {
     }
 
     #[test]
-    fn test_load_config_with_home_expansion() {
+    fn test_config_load_with_home_expansion() {
         let temp_dir = tempfile::tempdir().unwrap();
 
         // Set HOME and NEOGHQ_ROOT with ~ prefix
@@ -83,7 +84,7 @@ mod tests {
             std::env::set_var("NEOGHQ_ROOT", "~/custom/repos");
         }
 
-        let config = load_config().unwrap();
+        let config = Config::load().unwrap();
         let expected = format!("{}/custom/repos", temp_dir.path().display());
         assert_eq!(config.root, expected);
 
@@ -95,14 +96,14 @@ mod tests {
     }
 
     #[test]
-    fn test_load_config_home_expansion_error() {
+    fn test_config_load_home_expansion_error() {
         // Test the error case when HOME is not set but ~ expansion is needed
         unsafe {
             std::env::set_var("NEOGHQ_ROOT", "~/test/path");
             std::env::remove_var("HOME");
         }
 
-        let result = load_config();
+        let result = Config::load();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("HOME environment variable is not set"));
 
@@ -111,4 +112,5 @@ mod tests {
             std::env::remove_var("NEOGHQ_ROOT");
         }
     }
+
 }

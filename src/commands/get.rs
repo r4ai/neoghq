@@ -2,7 +2,7 @@ use anyhow::{Result, anyhow};
 use crate::config::Config;
 
 pub fn execute(url: String, branch: Option<String>) -> Result<()> {
-    let config = crate::config::load_config()?;
+    let config = Config::load()?;
     execute_get_command(url, branch, config)
 }
 
