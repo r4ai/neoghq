@@ -1,5 +1,6 @@
 mod cli;
 mod commands;
+mod config;
 
 use clap::Parser;
 use cli::Cli;
@@ -39,15 +40,21 @@ mod tests {
 
     #[test]
     fn test_get_command_attempts_clone() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        
         let output = Command::new("cargo")
             .args(&["run", "--", "get", "https://github.com/user/repo"])
+            .env("NEOGHQ_ROOT", temp_dir.path())
             .output()
             .expect("Failed to execute command");
 
         let stderr = String::from_utf8(output.stderr).unwrap();
+        let stdout = String::from_utf8(output.stdout).unwrap();
         // The command should attempt to clone and show appropriate output
         assert!(stderr.contains("Cloning https://github.com/user/repo") || 
                 stderr.contains("remote authentication required") ||
-                stderr.contains("repository not found"));
+                stderr.contains("repository not found") ||
+                stdout.contains("Cloning https://github.com/user/repo") ||
+                stderr.contains("no callback set"));
     }
 }

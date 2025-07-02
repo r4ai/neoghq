@@ -1,7 +1,9 @@
 use anyhow::{Result, anyhow};
+use crate::config::Config;
 
 pub fn execute(url: String, branch: Option<String>) -> Result<()> {
-    execute_get_command(url, branch)
+    let config = crate::config::load_config()?;
+    execute_get_command(url, branch, config)
 }
 
 #[cfg(test)]
@@ -140,15 +142,11 @@ mod tests {
     fn test_execute_with_default_branch() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Set a temporary NEOGHQ_ROOT for this test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
-
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = None; // No branch specified, should default to "main"
+        let config = Config::new(temp_dir.path().to_string_lossy().to_string());
 
-        let result = execute_get_command(url, branch);
+        let result = execute_get_command(url, branch, config);
 
         assert!(result.is_ok());
 
@@ -158,91 +156,59 @@ mod tests {
         assert!(repo_path.join(".git").exists()); // bare repo
         assert!(repo_path.join("main").exists()); // default branch worktree
         assert!(repo_path.join("main/README").exists()); // worktree content
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
     fn test_execute_with_default_root() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Set HOME to temp directory and ensure NEOGHQ_ROOT is not set
-        unsafe {
-            std::env::set_var("HOME", temp_dir.path());
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
-
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
+        let default_path = temp_dir.path().join("src/repos");
+        let config = Config::new(default_path.to_string_lossy().to_string());
 
-        let result = execute_get_command(url, branch);
+        let result = execute_get_command(url, branch, config);
 
         assert!(result.is_ok());
 
         // Verify directory structure was created in default location ~/src/repos
-        let default_path = temp_dir
-            .path()
-            .join("src/repos/github.com/octocat/Hello-World");
-        assert!(default_path.exists());
-        assert!(default_path.join(".git").exists()); // bare repo
-        assert!(default_path.join("main").exists()); // worktree
-        assert!(default_path.join("main/README").exists()); // worktree content
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("HOME");
-        }
+        let repo_path = default_path.join("github.com/octocat/Hello-World");
+        assert!(repo_path.exists());
+        assert!(repo_path.join(".git").exists()); // bare repo
+        assert!(repo_path.join("main").exists()); // worktree
+        assert!(repo_path.join("main/README").exists()); // worktree content
     }
 
     #[test]
     fn test_execute_with_home_directory_expansion() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Set HOME environment variable to temp directory
-        unsafe {
-            std::env::set_var("HOME", temp_dir.path());
-            std::env::set_var("NEOGHQ_ROOT", "~/test/repos"); // Use ~ to trigger expansion
-        }
-
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
+        let expanded_path = temp_dir.path().join("test/repos");
+        let config = Config::new(expanded_path.to_string_lossy().to_string());
 
-        let result = execute_get_command(url, branch);
+        let result = execute_get_command(url, branch, config);
 
         assert!(result.is_ok());
 
         // Verify directory structure was created in expanded path
-        let expanded_path = temp_dir
-            .path()
-            .join("test/repos/github.com/octocat/Hello-World");
-        assert!(expanded_path.exists());
-        assert!(expanded_path.join(".git").exists()); // bare repo
-        assert!(expanded_path.join("main").exists()); // worktree
-        assert!(expanded_path.join("main/README").exists()); // worktree content
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-            std::env::remove_var("HOME");
-        }
+        let repo_path = expanded_path.join("github.com/octocat/Hello-World");
+        assert!(repo_path.exists());
+        assert!(repo_path.join(".git").exists()); // bare repo
+        assert!(repo_path.join("main").exists()); // worktree
+        assert!(repo_path.join("main/README").exists()); // worktree content
     }
 
     #[test]
     fn test_execute_integration() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Set a temporary NEOGHQ_ROOT for this test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
-
         let url = "https://github.com/octocat/Hello-World.git";
         let branch = Some("main".to_string());
+        let config = Config::new(temp_dir.path().to_string_lossy().to_string());
 
-        let result = execute_get_command(url.to_string(), branch);
+        let result = execute_get_command(url.to_string(), branch, config);
 
         assert!(result.is_ok());
 
@@ -252,63 +218,40 @@ mod tests {
         assert!(repo_path.join(".git").exists()); // bare repo
         assert!(repo_path.join("main").exists()); // worktree
         assert!(repo_path.join("main/README").exists()); // worktree content
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
     fn test_execute_when_repository_already_exists() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Set a temporary NEOGHQ_ROOT for this test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
-
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
+        let config = Config::new(temp_dir.path().to_string_lossy().to_string());
 
         // First execution - creates the repository
-        let result1 = execute_get_command(url.clone(), branch.clone());
+        let result1 = execute_get_command(url.clone(), branch.clone(), config.clone());
         assert!(result1.is_ok());
 
         // Second execution - repository already exists, should skip cloning but create worktree if needed
-        let result2 = execute_get_command(url, branch);
+        let result2 = execute_get_command(url, branch, config);
         assert!(result2.is_ok());
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
     fn test_execute_when_both_repo_and_worktree_exist() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Set a temporary NEOGHQ_ROOT for this test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
-
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
+        let config = Config::new(temp_dir.path().to_string_lossy().to_string());
 
         // First execution - creates both repository and worktree
-        let result1 = execute_get_command(url.clone(), branch.clone());
+        let result1 = execute_get_command(url.clone(), branch.clone(), config.clone());
         assert!(result1.is_ok());
 
         // Second execution - both already exist, should skip both cloning and worktree creation
-        let result2 = execute_get_command(url, branch);
+        let result2 = execute_get_command(url, branch, config);
         assert!(result2.is_ok());
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
@@ -592,7 +535,7 @@ fn create_worktree(
     Ok(())
 }
 
-fn execute_get_command(url: String, branch: Option<String>) -> Result<()> {
+fn execute_get_command(url: String, branch: Option<String>, config: Config) -> Result<()> {
     use std::path::Path;
 
     // Parse the repository URL to extract host, owner, and repo
@@ -601,17 +544,8 @@ fn execute_get_command(url: String, branch: Option<String>) -> Result<()> {
     // Determine the branch to use (default to "main" if not specified)
     let branch = branch.unwrap_or_else(|| "main".to_string());
 
-    // Get the neoghq root directory
-    let root = std::env::var("NEOGHQ_ROOT").unwrap_or_else(|_| "~/src/repos".to_string());
-
-    // Expand ~ to home directory if needed
-    let root = if root.starts_with("~/") {
-        let home = std::env::var("HOME")
-            .map_err(|_| anyhow!("HOME environment variable is not set"))?;
-        root.replace("~", &home)
-    } else {
-        root
-    };
+    // Use the root from config
+    let root = config.root;
 
     // Create repository and worktree paths
     let repo_dir = format!("{}/{}/{}/{}", root, host, owner, repo);
