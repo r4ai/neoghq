@@ -93,4 +93,22 @@ mod tests {
             std::env::remove_var("HOME");
         }
     }
+
+    #[test]
+    fn test_load_config_home_expansion_error() {
+        // Test the error case when HOME is not set but ~ expansion is needed
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", "~/test/path");
+            std::env::remove_var("HOME");
+        }
+
+        let result = load_config();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("HOME environment variable is not set"));
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
+    }
 }
