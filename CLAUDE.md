@@ -1,5 +1,35 @@
 # neoghq - Git Worktree-Based Repository Manager
 
+## Test-Driven Development (TDD)
+
+**CRITICAL: All new features MUST be implemented using t_wada's TDD methodology**
+
+1. **TDD Cycle (Red → Green → Refactor)**
+
+2. **Commit on Each Cycle**
+
+3. **Keep Coverage 100%**
+
+   - Use `mise run test` to run tests and check coverage
+
+   - Use `cargo +nightly llvm-cov -q --text | rg -U "(.*\.rs:)|(\s+0\|)|(.*\s*\^0)"` to check uncovered regions and lines
+
+   - For functions which is impossible to test, use `#[cfg_attr(coverage_nightly, coverage(off))]` to disable coverage checking
+
+      ```
+      #[cfg(test)]
+      #[cfg_attr(coverage_nightly, coverage(off))]
+      mod tests {}
+      ```
+
+4. **Implementation Approach**
+
+   - Break features into smallest possible increments
+   - Start with the simplest test case
+   - Add complexity gradually through multiple TDD cycles
+   - Never write production code without a failing test first
+   - Always ensure all tests pass before moving to next feature
+
 ## Project Overview
 
 neoghq is a Rust-based repository management tool developed as an alternative to the traditional ghq.
@@ -86,53 +116,14 @@ Key external crates:
 
 ### Coding Standards
 
-1. **Naming Conventions**
-
-   - Function names: snake_case
-   - Structs: PascalCase
-   - Constants: SCREAMING_SNAKE_CASE
-
-2. **Error Handling**
+1. **Error Handling**
 
    - Use `anyhow::Result<T>`
    - User-facing error messages support localization
 
-3. **Testing**
+2. **Testing**
    - Unit tests: Implemented within each module
    - Integration tests: Implemented in `tests/` directory
-   - Actual Git operation tests using temporary directories
-
-### Build & Test Procedures
-
-```bash
-# Build
-cargo build
-
-# Run tests
-cargo test
-
-# Release build
-cargo build --release
-
-# Lint
-cargo clippy
-
-# Format
-cargo fmt
-
-# Generate documentation
-cargo doc --open
-```
-
-### Debugging
-
-```bash
-# Run with debug build
-RUST_LOG=debug cargo run -- <command>
-
-# Test in temporary directory
-NEOGHQ_ROOT=/tmp/neoghq-test cargo run -- <command>
-```
 
 ## Configuration File
 
