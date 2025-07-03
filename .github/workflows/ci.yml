@@ -24,24 +24,32 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup mise
-        uses: jdx/mise-action@bb86feacf6eb957c0a295df514530390b68009a4 # v2.2.3
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336d9b35a # stable
         with:
-          install: true
-          cache: true
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Setup Task
+        uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
+        with:
+          version: 3.x
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84 # v2.7.3
 
       - name: Build the project
         if: matrix.task == 'build'
-        run: cargo build --release
+        run: task build
 
       - name: Run tests with coverage
         if: matrix.task == 'test'
-        run: mise run test
+        run: task test
 
       - name: Check code formatting
         if: matrix.task == 'format'
-        run: cargo fmt --check
+        run: task fmt
 
       - name: Run clippy linter
         if: matrix.task == 'lint'
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: task lint

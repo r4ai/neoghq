@@ -10,9 +10,9 @@
 
 3. **Keep Coverage 100%**
 
-   - Use `mise run test` to run tests and check coverage
+   - Use `task test` to run tests and check coverage
 
-   - Use `cargo +nightly llvm-cov -q --text | rg -U "(.*\.rs:)|(\s+0\|)|(.*\s*\^0)"` to check uncovered regions and lines
+   - Use `cargo llvm-cov --text | rg -U "(.*\.rs:)|(\s+0\|)|(.*\s*\^0)"` to check uncovered regions and lines
 
    - For functions which is impossible to test, use `#[cfg_attr(coverage_nightly, coverage(off))]` to disable coverage checking
 

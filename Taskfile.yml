@@ -1,0 +1,37 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the project
+    cmds:
+      - cargo build --release
+
+  test:
+    desc: Run tests with coverage
+    cmds:
+      - cargo test
+
+  fmt:
+    desc: Check code formatting
+    cmds:
+      - cargo fmt --check
+
+  lint:
+    desc: Run clippy linter
+    cmds:
+      - cargo clippy --all-targets --all-features -- -D warnings
+
+  fmt-fix:
+    desc: Fix code formatting
+    cmds:
+      - cargo fmt
+
+  dev:
+    desc: Development build
+    cmds:
+      - cargo build
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - cargo clean
