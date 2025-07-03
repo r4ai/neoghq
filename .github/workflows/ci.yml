@@ -52,7 +52,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: matrix.task == 'test'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: codecov.json
