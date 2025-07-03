@@ -1,5 +1,35 @@
 # neoghq - Git Worktree-Based Repository Manager
 
+## Test-Driven Development (TDD)
+
+**CRITICAL: All new features MUST be implemented using t_wada's TDD methodology**
+
+1. **TDD Cycle (Red → Green → Refactor)**
+
+2. **Commit on Each Cycle**
+
+3. **Keep Coverage 100%**
+
+   - Use `mise run test` to run tests and check coverage
+
+   - Use `cargo +nightly llvm-cov -q --text | rg -U "(.*\.rs:)|(\s+0\|)|(.*\s*\^0)"` to check uncovered regions and lines
+
+   - For functions which is impossible to test, use `#[cfg_attr(coverage_nightly, coverage(off))]` to disable coverage checking
+
+      ```
+      #[cfg(test)]
+      #[cfg_attr(coverage_nightly, coverage(off))]
+      mod tests {}
+      ```
+
+4. **Implementation Approach**
+
+   - Break features into smallest possible increments
+   - Start with the simplest test case
+   - Add complexity gradually through multiple TDD cycles
+   - Never write production code without a failing test first
+   - Always ensure all tests pass before moving to next feature
+
 ## Project Overview
 
 neoghq is a Rust-based repository management tool developed as an alternative to the traditional ghq.
@@ -83,36 +113,6 @@ Key external crates:
 - `anyhow`, `thiserror` - Error handling
 
 ## Development Guidelines
-
-### Test-Driven Development (TDD)
-
-**CRITICAL: All new features MUST be implemented using t_wada's TDD methodology**
-
-1. **TDD Cycle (Red → Green → Refactor)**
-
-2. **Commit on Each Cycle**
-
-3. **Keep Coverage 100%**
-
-   - Use `mise run test` to run tests and check coverage
-
-   - Use `cargo +nightly llvm-cov -q --text | rg -U "(.*\.rs:)|(\s+0\|)|(.*\s*\^0)"` to check uncovered regions and lines
-
-   - For functions which is impossible to test, use `#[cfg_attr(coverage_nightly, coverage(off))]` to disable coverage checking
-
-      ```
-      #[cfg(test)]
-      #[cfg_attr(coverage_nightly, coverage(off))]
-      mod tests {}
-      ```
-
-4. **Implementation Approach**
-
-   - Break features into smallest possible increments
-   - Start with the simplest test case
-   - Add complexity gradually through multiple TDD cycles
-   - Never write production code without a failing test first
-   - Always ensure all tests pass before moving to next feature
 
 ### Coding Standards
 
