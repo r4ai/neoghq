@@ -75,20 +75,52 @@ Its main feature is a design that assumes the use of git worktree, enabling effi
 
 ### Core Features
 
-#### Command List
+#### Repository Operations
 
-- `neoghq get, clone <url> [branch]` - Clone repository and create worktree
-- `neoghq list` - List managed worktrees
-- `neoghq remove, rm <path>` - Remove worktree
+- `neoghq repo clone <url>` - Clone repository and create default branch worktree
+- `neoghq repo create <url>` - Create a new repository and initialize worktree
+- `neoghq repo switch <repo>` - Navigate to repository directory
+- `neoghq repo list` - List all managed repositories
+
+#### Worktree Operations
+
+- `neoghq worktree create <branch>` - Create worktree from default branch
+- `neoghq worktree switch <branch>` - Navigate to specified worktree
+- `neoghq worktree remove <branch>` - Remove worktree
+- `neoghq worktree clean` - Remove worktrees merged to default branch
+- `neoghq worktree status` - Show status of all worktrees
+- `neoghq worktree list` - List all managed worktrees
+
+#### Global Operations
+
 - `neoghq root` - Show neoghq root directory path
-- `neoghq create` - Create a new repository and initialize worktree
 - `neoghq help` - Show help message
 
-#### Extended Features
+### Typical Workflow
 
-- `neoghq switch <repo> <branch>` - Navigate to specified branch worktree
-- `neoghq clean` - Automatically remove unnecessary worktrees
-- `neoghq status` - List status of all worktrees
+```bash
+# Clone a repository
+neoghq repo clone https://github.com/r4ai/readme
+
+# Navigate to the repository
+neoghq repo switch r4ai/readme
+
+# Create a new worktree for a feature branch
+neoghq worktree create feature/ci
+
+# Switch to the new worktree
+neoghq worktree switch feature/ci
+
+# After work is done, remove the worktree
+neoghq worktree remove feature/ci
+
+# Clean up merged worktrees
+neoghq worktree clean
+
+# List all repositories and worktrees
+neoghq repo list
+neoghq worktree list
+```
 
 ## Architecture
 
@@ -99,14 +131,22 @@ src/
 ├── main.rs             # Entry point
 ├── cli.rs              # CLI argument parsing
 ├── commands/
-│   ├── get.rs          # Get command implementation
-│   ├── list.rs         # List command implementation
-│   ├── remove.rs       # Remove command implementation
+│   ├── repo/
+│   │   ├── clone.rs    # Clone command implementation
+│   │   ├── create.rs   # Create command implementation
+│   │   ├── switch.rs   # Repo switch command implementation
+│   │   ├── list.rs     # Repo list command implementation
+│   │   └── mod.rs      # Repo commands module
+│   ├── worktree/
+│   │   ├── create.rs   # Worktree create command implementation
+│   │   ├── switch.rs   # Worktree switch command implementation
+│   │   ├── remove.rs   # Remove command implementation
+│   │   ├── clean.rs    # Clean command implementation
+│   │   ├── status.rs   # Status command implementation
+│   │   ├── list.rs     # Worktree list command implementation
+│   │   └── mod.rs      # Worktree commands module
 │   ├── root.rs         # Root command implementation
-│   ├── create.rs       # Create command implementation
-│   ├── switch.rs       # Switch command implementation
-│   ├── clean.rs        # Clean command implementation
-│   └── status.rs       # Status command implementation
+│   └── mod.rs          # Commands module
 ├── config.rs           # Configuration management
 └── error.rs            # Error handling
 ```

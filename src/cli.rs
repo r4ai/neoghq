@@ -11,23 +11,45 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    #[command(alias = "clone")]
-    Get {
-        url: String,
-        #[arg(help = "Branch name")]
-        branch: Option<String>,
+    /// Repository operations
+    Repo {
+        #[command(subcommand)]
+        command: RepoCommands,
     },
-    List,
-    #[command(alias = "rm")]
-    Remove {
-        path: String,
+    /// Worktree operations
+    Worktree {
+        #[command(subcommand)]
+        command: WorktreeCommands,
     },
+    /// Show neoghq root directory path
     Root,
-    Create,
-    Switch {
-        repo: String,
-        branch: String,
-    },
+}
+
+#[derive(Subcommand)]
+pub enum RepoCommands {
+    /// Clone repository and create default branch worktree
+    Clone { url: String },
+    /// Create a new repository and initialize worktree
+    Create { url: String },
+    /// Navigate to repository directory
+    Switch { repo: String },
+    /// List all managed repositories
+    List,
+}
+
+#[derive(Subcommand)]
+pub enum WorktreeCommands {
+    /// Create worktree from default branch
+    Create { branch: String },
+    /// Navigate to specified worktree
+    Switch { branch: String },
+    /// Remove worktree
+    #[command(alias = "rm")]
+    Remove { branch: String },
+    /// Remove worktrees merged to default branch
     Clean,
+    /// Show status of all worktrees
     Status,
+    /// List all managed worktrees
+    List,
 }
