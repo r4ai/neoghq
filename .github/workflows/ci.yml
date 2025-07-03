@@ -20,23 +20,23 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@2deec96fc0de605d114d3860f29d1d066ad4151e # stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           components: rustfmt, clippy
 
       - name: Setup Task
-        uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
+        uses: arduino/setup-task@v2
         with:
           version: 3.x
 
       - name: Cache dependencies
-        uses: Swatinem/rust-cache@f0deed1 # latest
+        uses: Swatinem/rust-cache@v2
 
       - name: Build the project
         if: matrix.task == 'build'
