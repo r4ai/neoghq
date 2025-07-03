@@ -1,14 +1,14 @@
+pub mod clean;
+pub mod create;
 pub mod get;
 pub mod list;
 pub mod remove;
 pub mod root;
-pub mod create;
-pub mod switch;
-pub mod clean;
 pub mod status;
+pub mod switch;
 
-use anyhow::Result;
 use crate::{cli::Commands, config::Config};
+use anyhow::Result;
 
 pub fn execute_command(command: Commands, config: Config) -> Result<()> {
     match command {

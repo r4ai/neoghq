@@ -18,7 +18,7 @@ fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
             .host_str()
             .ok_or_else(|| anyhow!("Missing host in URL"))?;
         let owner = path_parts
-            .get(0)
+            .first()
             .ok_or_else(|| anyhow!("Missing owner in URL: {url}"))?;
         let repo = path_parts
             .get(1)
@@ -31,7 +31,7 @@ fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
         let url_without_prefix = url.strip_prefix("git@").unwrap();
         let parts: Vec<&str> = url_without_prefix.split(':').collect();
         let host = parts
-            .get(0)
+            .first()
             .ok_or_else(|| anyhow!("Missing host in URL: {url}"))?;
         let owner_and_repo = parts
             .get(1)
@@ -39,7 +39,7 @@ fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
             .split("/")
             .collect::<Vec<_>>();
         let owner = owner_and_repo
-            .get(0)
+            .first()
             .ok_or_else(|| anyhow!("Missing owner in URL: {url}"))?;
         let repo = owner_and_repo
             .get(1)
@@ -94,7 +94,7 @@ fn create_worktree(
     let repo = Repository::open(bare_repo_path)?;
 
     // Create worktree
-    let branch_ref = format!("refs/heads/{}", branch);
+    let branch_ref = format!("refs/heads/{branch}");
     let mut opts = git2::WorktreeAddOptions::new();
 
     if let Ok(reference) = repo.find_reference(&branch_ref) {
