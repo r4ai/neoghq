@@ -132,9 +132,9 @@ mod tests {
             // Create directory structure: github.com/user/repo/main
             let repo_path = root.join("github.com").join("user").join("repo");
             fs::create_dir_all(&repo_path).unwrap();
-            fs::create_dir_all(&repo_path.join("main")).unwrap();
-            fs::create_dir_all(&repo_path.join("feature")).unwrap();
-            fs::create_dir_all(&repo_path.join(".git")).unwrap();
+            fs::create_dir_all(repo_path.join("main")).unwrap();
+            fs::create_dir_all(repo_path.join("feature")).unwrap();
+            fs::create_dir_all(repo_path.join(".git")).unwrap();
 
             let result = list_worktrees(&root.to_path_buf());
             assert!(result.is_ok());
