@@ -1,5 +1,19 @@
 {
   "hooks": {
-    "EventName": []
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path | select(endswith(\".rs\"))' | xargs -r cargo fmt --"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path | select(endswith(\".rs\"))' | cargo clippy --fix --allow-dirty --allow-staged -- -W clippy::all"
+          }
+        ]
+      }
+    ]
   }
 }
