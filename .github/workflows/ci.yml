@@ -44,7 +44,15 @@ jobs:
 
       - name: Run tests with coverage
         if: matrix.task == 'test'
-        run: task test
+        run: task coverage-codecov
+
+      - name: Upload coverage to Codecov
+        if: matrix.task == 'test'
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: codecov.json
+          fail_ci_if_error: true
 
       - name: Check code formatting
         if: matrix.task == 'format'
