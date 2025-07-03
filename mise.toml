@@ -3,4 +3,4 @@
 rust = { version = "nightly-2025-07-01", components = "llvm-tools-preview" }
 
 [tasks]
-test = "cargo llvm-cov && cargo llvm-cov report --lcov --output-path lcov.info && cargo llvm-cov report --html"
+test = "cargo +nightly llvm-cov && cargo +llvm-cov report --lcov --output-path lcov.info && cargo llvm-cov report --html"

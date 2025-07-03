@@ -96,6 +96,8 @@ Key external crates:
 
    - Use `mise run test` to run tests and check coverage
 
+   - Use `cargo +nightly llvm-cov -q --text | rg -U "(.*\.rs:)|(\s+0\|)|(.*\s*\^0)"` to check uncovered regions and lines
+
    - For functions which is impossible to test, use `#[cfg_attr(coverage_nightly, coverage(off))]` to disable coverage checking
 
       ```
@@ -104,7 +106,7 @@ Key external crates:
       mod tests {}
       ```
 
-3. **Implementation Approach**
+4. **Implementation Approach**
 
    - Break features into smallest possible increments
    - Start with the simplest test case
