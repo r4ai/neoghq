@@ -51,13 +51,13 @@ fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
 }
 
 fn resolve_repository_path(
-    root: &str,
+    root: &std::path::Path,
     host: &str,
     owner: &str,
     repo: &str,
     branch: &str,
-) -> String {
-    format!("{}/{}/{}/{}/{}", root, host, owner, repo, branch)
+) -> std::path::PathBuf {
+    root.join(host).join(owner).join(repo).join(branch)
 }
 
 fn clone_repository_bare(url: &str, path: &std::path::Path) -> Result<()> {
@@ -101,7 +101,6 @@ fn create_worktree(
 }
 
 fn execute_get_command(url: String, branch: Option<String>, config: Config) -> Result<()> {
-    use std::path::Path;
 
     // Parse the repository URL to extract host, owner, and repo
     let (host, owner, repo) = parse_repository_url(&url)?;
@@ -113,8 +112,8 @@ fn execute_get_command(url: String, branch: Option<String>, config: Config) -> R
     let root = config.root;
 
     // Create repository and worktree paths
-    let repo_dir = format!("{}/{}/{}/{}", root, host, owner, repo);
-    let bare_repo_path = Path::new(&repo_dir).join(".git");
+    let repo_dir = root.join(&host).join(&owner).join(&repo);
+    let bare_repo_path = repo_dir.join(".git");
     let worktree_path = resolve_repository_path(&root, &host, &owner, &repo, &branch);
 
     // Clone the bare repository if it doesn't exist
@@ -124,15 +123,15 @@ fn execute_get_command(url: String, branch: Option<String>, config: Config) -> R
     }
 
     // Create the worktree if it doesn't exist
-    if !Path::new(&worktree_path).exists() {
+    if !worktree_path.exists() {
         println!(
             "Creating worktree for branch '{}' in {}",
-            branch, worktree_path
+            branch, worktree_path.display()
         );
-        create_worktree(&bare_repo_path, Path::new(&worktree_path), &branch)?;
+        create_worktree(&bare_repo_path, &worktree_path, &branch)?;
     }
 
-    println!("Repository cloned successfully: {}", worktree_path);
+    println!("Repository cloned successfully: {}", worktree_path.display());
     Ok(())
 }
 
@@ -312,7 +311,7 @@ mod execute_tests {
 
     #[test]
     fn test_resolve_repository_path() {
-        let root = "/tmp/neoghq";
+        let root = std::path::Path::new("/tmp/neoghq");
         let host = "github.com";
         let owner = "user";
         let repo = "repo";
@@ -320,7 +319,7 @@ mod execute_tests {
 
         let result = resolve_repository_path(root, host, owner, repo, branch);
 
-        assert_eq!(result, "/tmp/neoghq/github.com/user/repo/main");
+        assert_eq!(result, std::path::PathBuf::from("/tmp/neoghq/github.com/user/repo/main"));
     }
 
     #[test]
@@ -330,7 +329,8 @@ mod execute_tests {
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
         let env = config::Env {
-            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+            neoghq_root: Some(temp_dir.path().to_path_buf()),
+            home: None,
         };
         let config = Config::load(env).unwrap();
 
@@ -353,7 +353,8 @@ mod execute_tests {
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
         let env = config::Env {
-            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+            neoghq_root: Some(temp_dir.path().to_path_buf()),
+            home: None,
         };
         let config = Config::load(env).unwrap();
 
@@ -373,7 +374,8 @@ mod execute_tests {
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = None;
         let env = config::Env {
-            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+            neoghq_root: Some(temp_dir.path().to_path_buf()),
+            home: None,
         };
         let config = Config::load(env).unwrap();
 
@@ -394,7 +396,8 @@ mod execute_tests {
         let url = "invalid-url".to_string();
         let branch = Some("main".to_string());
         let env = config::Env {
-            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+            neoghq_root: Some(temp_dir.path().to_path_buf()),
+            home: None,
         };
         let config = Config::load(env).unwrap();
         let result = execute_get_command(url, branch, config);
@@ -407,7 +410,8 @@ mod execute_tests {
         let url = "https://github.com/r4ai/404_notfound.git".to_string();
         let branch = Some("main".to_string());
         let env = config::Env {
-            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+            neoghq_root: Some(temp_dir.path().to_path_buf()),
+            home: None,
         };
         let config = Config::load(env).unwrap();
         let result = execute_get_command(url, branch, config);
