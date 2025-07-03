@@ -42,12 +42,12 @@ impl Config {
                     // this unwrap is safe because we checked that root starts with "~"
                     root.strip_prefix("~").unwrap(),
                 );
-                expanded_path.canonicalize()?
+                expanded_path
             } else {
-                root.canonicalize()?
+                root
             }
         } else {
-            root.canonicalize()?
+            root
         };
 
         Ok(Self { root })
