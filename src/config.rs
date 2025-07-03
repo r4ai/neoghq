@@ -76,7 +76,7 @@ mod tests {
         let temp_dir = tempfile::tempdir().unwrap();
         let src_repos_dir = temp_dir.path().join("src/repos");
         std::fs::create_dir_all(&src_repos_dir).unwrap();
-        
+
         let env = Env {
             neoghq_root: None,
             home: Some(temp_dir.path().to_path_buf()),
@@ -91,7 +91,7 @@ mod tests {
         let temp_dir = tempfile::tempdir().unwrap();
         let neoghq_dir = temp_dir.path().join("neoghq");
         std::fs::create_dir_all(&neoghq_dir).unwrap();
-        
+
         let env = Env {
             neoghq_root: Some(PathBuf::from("~/neoghq")),
             home: Some(temp_dir.path().to_path_buf()),

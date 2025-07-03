@@ -101,7 +101,6 @@ fn create_worktree(
 }
 
 fn execute_get_command(url: String, branch: Option<String>, config: Config) -> Result<()> {
-
     // Parse the repository URL to extract host, owner, and repo
     let (host, owner, repo) = parse_repository_url(&url)?;
 
@@ -126,12 +125,16 @@ fn execute_get_command(url: String, branch: Option<String>, config: Config) -> R
     if !worktree_path.exists() {
         println!(
             "Creating worktree for branch '{}' in {}",
-            branch, worktree_path.display()
+            branch,
+            worktree_path.display()
         );
         create_worktree(&bare_repo_path, &worktree_path, &branch)?;
     }
 
-    println!("Repository cloned successfully: {}", worktree_path.display());
+    println!(
+        "Repository cloned successfully: {}",
+        worktree_path.display()
+    );
     Ok(())
 }
 
@@ -319,7 +322,10 @@ mod execute_tests {
 
         let result = resolve_repository_path(root, host, owner, repo, branch);
 
-        assert_eq!(result, std::path::PathBuf::from("/tmp/neoghq/github.com/user/repo/main"));
+        assert_eq!(
+            result,
+            std::path::PathBuf::from("/tmp/neoghq/github.com/user/repo/main")
+        );
     }
 
     #[test]
