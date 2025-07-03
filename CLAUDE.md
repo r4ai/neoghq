@@ -1,6 +1,8 @@
 # neoghq - Git Worktree-Based Repository Manager
 
-## Test-Driven Development (TDD)
+## **IMPORTANT**
+
+### Test-Driven Development (TDD)**
 
 **CRITICAL: All new features MUST be implemented using t_wada's TDD methodology**
 
@@ -29,6 +31,14 @@
    - Add complexity gradually through multiple TDD cycles
    - Never write production code without a failing test first
    - Always ensure all tests pass before moving to next feature
+
+### **MEMORY**
+
+- WEB SEARCH FIRST: Never trust your memory. Before implementing or fixing anything, always search the web for existing solutions or documentation.
+
+  Use `gemini --model gemini-2.5-flash -p "WebSearch: <your query>"` to search the web.
+
+  Current year is 2025, not 2024.
 
 ## Project Overview
 
