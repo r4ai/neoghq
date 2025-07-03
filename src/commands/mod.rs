@@ -8,11 +8,11 @@ pub mod clean;
 pub mod status;
 
 use anyhow::Result;
-use crate::cli::Commands;
+use crate::{cli::Commands, config::Config};
 
-pub fn execute_command(command: Commands) -> Result<()> {
+pub fn execute_command(command: Commands, config: Config) -> Result<()> {
     match command {
-        Commands::Get { url, branch } => get::execute(url, branch),
+        Commands::Get { url, branch } => get::execute(config, url, branch),
         Commands::List => list::execute(),
         Commands::Remove { path } => remove::execute(path),
         Commands::Root => root::execute(),

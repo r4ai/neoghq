@@ -1,14 +1,15 @@
-use anyhow::{Result, anyhow};
 use crate::config::Config;
+use anyhow::{Result, anyhow};
 
-pub fn execute(url: String, branch: Option<String>) -> Result<()> {
-    let config = Config::load()?;
+pub fn execute(config: Config, url: String, branch: Option<String>) -> Result<()> {
     execute_get_command(url, branch, config)
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
+    use crate::config;
 
     #[test]
     fn test_parse_github_url() {
@@ -39,6 +40,14 @@ mod tests {
         let url = "https://github.com/single-part"; // Invalid: only one part after domain
         let result = parse_repository_url(url);
 
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_github_url_invalid_https_format_2() {
+        let url = "https://example..com";
+        let result = parse_repository_url(url);
+        
         assert!(result.is_err());
     }
 
@@ -113,15 +122,14 @@ mod tests {
     fn test_execute_public_function() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Set a temporary NEOGHQ_ROOT for this test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
-
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
+        let env = config::Env {
+            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+        };
+        let config = Config::load(env).unwrap();
 
-        let result = execute(url, branch);
+        let result = execute(config, url, branch);
 
         assert!(result.is_ok());
 
@@ -131,11 +139,6 @@ mod tests {
         assert!(repo_path.join(".git").exists()); // bare repo
         assert!(repo_path.join("main").exists()); // worktree
         assert!(repo_path.join("main/README").exists()); // worktree content
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
@@ -144,7 +147,10 @@ mod tests {
 
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = None; // No branch specified, should default to "main"
-        let config = Config::new(temp_dir.path().to_string_lossy().to_string());
+        let env = config::Env {
+            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+        };
+        let config = Config::load(env).unwrap();
 
         let result = execute_get_command(url, branch, config);
 
@@ -165,7 +171,10 @@ mod tests {
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
         let default_path = temp_dir.path().join("src/repos");
-        let config = Config::new(default_path.to_string_lossy().to_string());
+        let env = config::Env {
+            neoghq_root: Some(default_path.to_string_lossy().to_string()),
+        };
+        let config = Config::load(env).unwrap();
 
         let result = execute_get_command(url, branch, config);
 
@@ -186,7 +195,10 @@ mod tests {
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
         let expanded_path = temp_dir.path().join("test/repos");
-        let config = Config::new(expanded_path.to_string_lossy().to_string());
+        let env = config::Env {
+            neoghq_root: Some(expanded_path.to_string_lossy().to_string()),
+        };
+        let config = Config::load(env).unwrap();
 
         let result = execute_get_command(url, branch, config);
 
@@ -206,7 +218,10 @@ mod tests {
 
         let url = "https://github.com/octocat/Hello-World.git";
         let branch = Some("main".to_string());
-        let config = Config::new(temp_dir.path().to_string_lossy().to_string());
+        let env = config::Env {
+            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+        };
+        let config = Config::load(env).unwrap();
 
         let result = execute_get_command(url.to_string(), branch, config);
 
@@ -226,7 +241,10 @@ mod tests {
 
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
-        let config = Config::new(temp_dir.path().to_string_lossy().to_string());
+        let env = config::Env {
+            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+        };
+        let config = Config::load(env).unwrap();
 
         // First execution - creates the repository
         let result1 = execute_get_command(url.clone(), branch.clone(), config.clone());
@@ -243,7 +261,10 @@ mod tests {
 
         let url = "https://github.com/octocat/Hello-World.git".to_string();
         let branch = Some("main".to_string());
-        let config = Config::new(temp_dir.path().to_string_lossy().to_string());
+        let env = config::Env {
+            neoghq_root: Some(temp_dir.path().to_string_lossy().to_string()),
+        };
+        let config = Config::load(env).unwrap();
 
         // First execution - creates both repository and worktree
         let result1 = execute_get_command(url.clone(), branch.clone(), config.clone());
@@ -434,15 +455,15 @@ mod tests {
         assert!(!found_parentless);
     }
 
-    #[test] 
+    #[test]
     fn test_find_actual_parentless_path() {
         // Test with empty string which should have no parent
         use std::path::Path;
 
-        // Test if we can find a parentless path to hit the break branch  
+        // Test if we can find a parentless path to hit the break branch
         let paths_with_empty = vec![
             Path::new("some/path"),
-            Path::new(""),  // Empty path definitely has no parent
+            Path::new(""), // Empty path definitely has no parent
         ];
 
         let mut found_parentless = false;
@@ -535,14 +556,14 @@ mod tests {
         // Use empty string which definitely has no parent
         let paths_mixed = vec![
             Path::new("some/path"),
-            Path::new(""),  // Empty path has no parent
+            Path::new(""), // Empty path has no parent
         ];
 
         let mut found_parentless = false;
         for path in paths_mixed {
             if path.parent().is_none() {
                 found_parentless = true;
-                break;  // This break needs to be covered
+                break; // This break needs to be covered
             }
         }
 
@@ -557,7 +578,7 @@ mod tests {
         // Create a mix that includes a path with no parent
         let paths_mixed = vec![
             Path::new("some/path"),
-            Path::new(""),  // This has no parent
+            Path::new(""), // This has no parent
             Path::new("another/path"),
         ];
 
@@ -565,7 +586,7 @@ mod tests {
         for path in paths_mixed {
             if path.parent().is_none() {
                 found_parentless = true;
-                break;  // This line needs to be covered
+                break; // This line needs to be covered
             }
         }
 
@@ -580,7 +601,7 @@ mod tests {
 
         // Test 1: Scenario where first path in list has no parent (covers early break)
         let paths_early_break = vec![
-            Path::new(""),  // First path has no parent
+            Path::new(""), // First path has no parent
             Path::new("not/reached"),
         ];
 
@@ -588,31 +609,28 @@ mod tests {
         for path in paths_early_break {
             if path.parent().is_none() {
                 found_parentless = true;
-                break;  // This should be covered
+                break; // This should be covered
             }
         }
         assert!(found_parentless);
 
         // Test 2: Scenario where second path has no parent (covers loop continuation)
         let paths_second_break = vec![
-            Path::new("has/parent"),  // First path has parent, loop continues
-            Path::new(""),  // Second path has no parent
+            Path::new("has/parent"), // First path has parent, loop continues
+            Path::new(""),           // Second path has no parent
         ];
 
         found_parentless = false;
         for path in paths_second_break {
             if path.parent().is_none() {
                 found_parentless = true;
-                break;  // This should be covered
+                break; // This should be covered
             }
         }
         assert!(found_parentless);
 
         // Test 3: Scenario where no paths have no parent (covers else branch)
-        let paths_no_parentless = vec![
-            Path::new("has/parent"),
-            Path::new("also/has/parent"),
-        ];
+        let paths_no_parentless = vec![Path::new("has/parent"), Path::new("also/has/parent")];
 
         found_parentless = false;
         for path in paths_no_parentless {

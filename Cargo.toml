@@ -3,6 +3,11 @@ name = "neoghq"
 version = "0.1.0"
 edition = "2024"
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(coverage,coverage_nightly)',
+] }
+
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 anyhow = "1.0"

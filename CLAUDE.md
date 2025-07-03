@@ -90,17 +90,22 @@ Key external crates:
 
 1. **TDD Cycle (Red → Green → Refactor)**
 
-   - **Red**: Write a failing test first
-   - **Green**: Write minimal code to make the test pass
-   - **Refactor**: Improve code while keeping tests green
-   - Repeat this cycle for each small increment of functionality
+2. **Commit on Each Cycle**
 
-2. **Commit Strategy**
+3. **Keep Coverage 100%**
 
-   - Commit frequently at each TDD step
-   - Each commit should represent one complete TDD cycle
+   - Use `mise run test` to run tests and check coverage
+
+   - For functions which is impossible to test, use `#[cfg_attr(coverage_nightly, coverage(off))]` to disable coverage checking
+
+      ```
+      #[cfg(test)]
+      #[cfg_attr(coverage_nightly, coverage(off))]
+      mod tests {}
+      ```
 
 3. **Implementation Approach**
+
    - Break features into smallest possible increments
    - Start with the simplest test case
    - Add complexity gradually through multiple TDD cycles
@@ -109,54 +114,14 @@ Key external crates:
 
 ### Coding Standards
 
-1. **Naming Conventions**
-
-   - Function names: snake_case
-   - Structs: PascalCase
-   - Constants: SCREAMING_SNAKE_CASE
-
-2. **Error Handling**
+1. **Error Handling**
 
    - Use `anyhow::Result<T>`
    - User-facing error messages support localization
 
-3. **Testing**
+2. **Testing**
    - Unit tests: Implemented within each module
    - Integration tests: Implemented in `tests/` directory
-   - Actual Git operation tests using temporary directories
-   - Follow TDD principles: test first, then implement
-
-### Build & Test Procedures
-
-```bash
-# Build
-cargo build
-
-# Run tests
-cargo llvm-cov
-
-# Release build
-cargo build --release
-
-# Lint
-cargo clippy
-
-# Format
-cargo fmt
-
-# Generate documentation
-cargo doc --open
-```
-
-### Debugging
-
-```bash
-# Run with debug build
-RUST_LOG=debug cargo run -- <command>
-
-# Test in temporary directory
-NEOGHQ_ROOT=/tmp/neoghq-test cargo run -- <command>
-```
 
 ## Configuration File
 

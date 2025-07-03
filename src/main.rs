@@ -1,18 +1,22 @@
+#![cfg_attr(coverage, feature(coverage_attribute))]
+
 mod cli;
 mod commands;
 mod config;
 
+use anyhow::Result;
 use clap::Parser;
 use cli::Cli;
 use commands::execute_command;
 
-fn main() {
+fn main() -> Result<()> {
+    let env = config::Env::load()?;
+    let config = config::Config::load(env)?;
     let cli = Cli::parse();
     
-    if let Err(e) = execute_command(cli.command) {
-        eprintln!("Error: {}", e);
-        std::process::exit(1);
-    }
+    execute_command(cli.command, config)?;
+
+    Ok(())
 }
 
 #[cfg(test)]
