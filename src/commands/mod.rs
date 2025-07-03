@@ -1,24 +1,37 @@
-pub mod clean;
-pub mod create;
-pub mod get;
-pub mod list;
-pub mod remove;
+pub mod repo;
 pub mod root;
-pub mod status;
-pub mod switch;
+pub mod worktree;
 
-use crate::{cli::Commands, config::Config};
+use crate::{
+    cli::{Commands, RepoCommands, WorktreeCommands},
+    config::Config,
+};
 use anyhow::Result;
 
 pub fn execute_command(command: Commands, config: Config) -> Result<()> {
     match command {
-        Commands::Get { url, branch } => get::execute(config, url, branch),
-        Commands::List => list::execute(),
-        Commands::Remove { path } => remove::execute(path),
+        Commands::Repo { command } => execute_repo_command(command, config),
+        Commands::Worktree { command } => execute_worktree_command(command, config),
         Commands::Root => root::execute(),
-        Commands::Create => create::execute(),
-        Commands::Switch { repo, branch } => switch::execute(repo, branch),
-        Commands::Clean => clean::execute(),
-        Commands::Status => status::execute(),
+    }
+}
+
+fn execute_repo_command(command: RepoCommands, config: Config) -> Result<()> {
+    match command {
+        RepoCommands::Clone { url } => repo::clone::execute(config, url, None),
+        RepoCommands::Create { url } => repo::create::execute(url),
+        RepoCommands::Switch { repo } => repo::switch::execute(repo),
+        RepoCommands::List => repo::list::execute(),
+    }
+}
+
+fn execute_worktree_command(command: WorktreeCommands, _config: Config) -> Result<()> {
+    match command {
+        WorktreeCommands::Create { branch } => worktree::create::execute(branch),
+        WorktreeCommands::Switch { branch } => worktree::switch::execute(branch),
+        WorktreeCommands::Remove { branch } => worktree::remove::execute(branch),
+        WorktreeCommands::Clean => worktree::clean::execute(),
+        WorktreeCommands::Status => worktree::status::execute(),
+        WorktreeCommands::List => worktree::list::execute(),
     }
 }

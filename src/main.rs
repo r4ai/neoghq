@@ -35,19 +35,17 @@ mod tests {
         assert!(stdout.contains("Git Worktree-Based Repository Manager"));
         assert!(stdout.contains("Usage:"));
         assert!(stdout.contains("Commands:"));
-        assert!(stdout.contains("get"));
-        assert!(stdout.contains("list"));
-        assert!(stdout.contains("remove"));
+        assert!(stdout.contains("repo"));
+        assert!(stdout.contains("worktree"));
         assert!(stdout.contains("root"));
-        assert!(stdout.contains("create"));
     }
 
     #[test]
-    fn test_get_command_attempts_clone() {
+    fn test_repo_clone_command_attempts_clone() {
         let temp_dir = tempfile::tempdir().unwrap();
 
         let output = Command::new("cargo")
-            .args(["run", "--", "get", "https://github.com/user/repo"])
+            .args(["run", "--", "repo", "clone", "https://github.com/user/repo"])
             .env("NEOGHQ_ROOT", temp_dir.path())
             .output()
             .expect("Failed to execute command");
