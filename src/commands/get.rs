@@ -94,8 +94,15 @@ fn create_worktree(
     let repo = Repository::open(bare_repo_path)?;
 
     // Create worktree
-    let opts = git2::WorktreeAddOptions::new();
-    repo.worktree(branch, worktree_path, Some(&opts))?;
+    let branch_ref = format!("refs/heads/{}", branch);
+    let mut opts = git2::WorktreeAddOptions::new();
+
+    if let Ok(reference) = repo.find_reference(&branch_ref) {
+        opts.reference(Some(&reference));
+        repo.worktree(branch, worktree_path, Some(&opts))?;
+    } else {
+        repo.worktree(branch, worktree_path, Some(&opts))?;
+    }
 
     Ok(())
 }
@@ -303,6 +310,22 @@ mod create_worktree_tests {
         let result = create_worktree(&bare_repo_path, &worktree_path, "main");
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_worktree_with_existing_branch_reference() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let bare_repo_path = temp_dir.path().join("repo.git");
+        let worktree_path = temp_dir.path().join("main");
+
+        // First create a bare repository that will have refs/heads/main
+        clone_repository_bare("https://github.com/r4ai/mercury.git", &bare_repo_path).unwrap();
+
+        // Create worktree for main branch - this should work without reference conflict error
+        let result = create_worktree(&bare_repo_path, &worktree_path, "main");
+
+        assert!(result.is_ok());
+        assert!(worktree_path.exists());
     }
 }
 
