@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        task: [build, test, format, lint]
+      fail-fast: false
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build the project
+        if: matrix.task == 'build'
+        run: task build
+
+      - name: Run tests with coverage
+        if: matrix.task == 'test'
+        run: task test
+
+      - name: Check code formatting
+        if: matrix.task == 'format'
+        run: task fmt
+
+      - name: Run clippy linter
+        if: matrix.task == 'lint'
+        run: task lint

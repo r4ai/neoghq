@@ -1,6 +1,8 @@
 # neoghq - Git Worktree-Based Repository Manager
 
-## Test-Driven Development (TDD)
+## **IMPORTANT**
+
+### Test-Driven Development (TDD)**
 
 **CRITICAL: All new features MUST be implemented using t_wada's TDD methodology**
 
@@ -10,9 +12,9 @@
 
 3. **Keep Coverage 100%**
 
-   - Use `mise run test` to run tests and check coverage
+   - Use `task test` to run tests and check coverage
 
-   - Use `cargo +nightly llvm-cov -q --text | rg -U "(.*\.rs:)|(\s+0\|)|(.*\s*\^0)"` to check uncovered regions and lines
+   - Use `cargo llvm-cov --text | rg -U "(.*\.rs:)|(\s+0\|)|(.*\s*\^0)"` to check uncovered regions and lines
 
    - For functions which is impossible to test, use `#[cfg_attr(coverage_nightly, coverage(off))]` to disable coverage checking
 
@@ -29,6 +31,14 @@
    - Add complexity gradually through multiple TDD cycles
    - Never write production code without a failing test first
    - Always ensure all tests pass before moving to next feature
+
+### **MEMORY**
+
+- WEB SEARCH FIRST: Never trust your memory. Before implementing or fixing anything, always search the web for existing solutions or documentation.
+
+  Use `gemini --model gemini-2.5-flash -p "WebSearch: <your query>"` to search the web.
+
+  Current year is 2025, not 2024.
 
 ## Project Overview
 

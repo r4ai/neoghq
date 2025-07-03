@@ -12,9 +12,7 @@ pub struct Env {
 impl Env {
     #[cfg_attr(coverage_nightly, coverage(off))]
     pub fn load() -> Result<Self> {
-        let neoghq_root = std::env::var("NEOGHQ_ROOT")
-            .ok()
-            .map(|path| PathBuf::from(path));
+        let neoghq_root = std::env::var("NEOGHQ_ROOT").ok().map(PathBuf::from);
         let home = dirs::home_dir();
 
         Ok(Self { neoghq_root, home })
@@ -38,11 +36,10 @@ impl Config {
         // Expand the root path if it contains a tilde
         let root = if root.starts_with("~") {
             if let Some(home_dir) = &home_dir {
-                let expanded_path = home_dir.join(
+                home_dir.join(
                     // this unwrap is safe because we checked that root starts with "~"
                     root.strip_prefix("~").unwrap(),
-                );
-                expanded_path
+                )
             } else {
                 root
             }
