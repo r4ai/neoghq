@@ -30,6 +30,10 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
+      - name: Install cargo-llvm-cov
+        if: matrix.task == 'test'
+        uses: taiki-e/install-action@cargo-llvm-cov
+
       - name: Setup Task
         uses: arduino/setup-task@v2
         with:
