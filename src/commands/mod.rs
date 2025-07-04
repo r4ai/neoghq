@@ -35,3 +35,236 @@ fn execute_worktree_command(command: WorktreeCommands, _config: Config) -> Resul
         WorktreeCommands::List => worktree::list::execute(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+    use std::path::PathBuf;
+
+    fn create_test_config() -> Config {
+        Config {
+            root: PathBuf::from("/tmp/test"),
+        }
+    }
+
+    #[test]
+    fn test_execute_command_root() {
+        let config = create_test_config();
+        let command = Commands::Root;
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_command_repo_create() {
+        let config = create_test_config();
+        let command = Commands::Repo {
+            command: RepoCommands::Create {
+                url: "https://github.com/user/repo".to_string(),
+            },
+        };
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_command_repo_switch() {
+        let config = create_test_config();
+        let command = Commands::Repo {
+            command: RepoCommands::Switch {
+                repo: "user/repo".to_string(),
+            },
+        };
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_command_repo_list() {
+        let config = create_test_config();
+        let command = Commands::Repo {
+            command: RepoCommands::List,
+        };
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_command_worktree_create() {
+        let config = create_test_config();
+        let command = Commands::Worktree {
+            command: WorktreeCommands::Create {
+                branch: "feature/test".to_string(),
+            },
+        };
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_command_worktree_switch() {
+        let config = create_test_config();
+        let command = Commands::Worktree {
+            command: WorktreeCommands::Switch {
+                branch: "feature/test".to_string(),
+            },
+        };
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_command_worktree_remove() {
+        let config = create_test_config();
+        let command = Commands::Worktree {
+            command: WorktreeCommands::Remove {
+                branch: "feature/test".to_string(),
+            },
+        };
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_command_worktree_clean() {
+        let config = create_test_config();
+        let command = Commands::Worktree {
+            command: WorktreeCommands::Clean,
+        };
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_command_worktree_status() {
+        let config = create_test_config();
+        let command = Commands::Worktree {
+            command: WorktreeCommands::Status,
+        };
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_command_worktree_list() {
+        let config = create_test_config();
+        let command = Commands::Worktree {
+            command: WorktreeCommands::List,
+        };
+
+        let result = execute_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_repo_command_clone() {
+        let config = create_test_config();
+        let command = RepoCommands::Clone {
+            url: "https://github.com/user/repo".to_string(),
+        };
+
+        let result = execute_repo_command(command, config);
+        assert!(result.is_err()); // Should fail because it's not a real repo
+    }
+
+    #[test]
+    fn test_execute_repo_command_create() {
+        let config = create_test_config();
+        let command = RepoCommands::Create {
+            url: "https://github.com/user/repo".to_string(),
+        };
+
+        let result = execute_repo_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_repo_command_switch() {
+        let config = create_test_config();
+        let command = RepoCommands::Switch {
+            repo: "user/repo".to_string(),
+        };
+
+        let result = execute_repo_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_repo_command_list() {
+        let config = create_test_config();
+        let command = RepoCommands::List;
+
+        let result = execute_repo_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_worktree_command_create() {
+        let config = create_test_config();
+        let command = WorktreeCommands::Create {
+            branch: "feature/test".to_string(),
+        };
+
+        let result = execute_worktree_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_worktree_command_switch() {
+        let config = create_test_config();
+        let command = WorktreeCommands::Switch {
+            branch: "feature/test".to_string(),
+        };
+
+        let result = execute_worktree_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_worktree_command_remove() {
+        let config = create_test_config();
+        let command = WorktreeCommands::Remove {
+            branch: "feature/test".to_string(),
+        };
+
+        let result = execute_worktree_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_worktree_command_clean() {
+        let config = create_test_config();
+        let command = WorktreeCommands::Clean;
+
+        let result = execute_worktree_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_worktree_command_status() {
+        let config = create_test_config();
+        let command = WorktreeCommands::Status;
+
+        let result = execute_worktree_command(command, config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_execute_worktree_command_list() {
+        let config = create_test_config();
+        let command = WorktreeCommands::List;
+
+        let result = execute_worktree_command(command, config);
+        assert!(result.is_ok());
+    }
+}
