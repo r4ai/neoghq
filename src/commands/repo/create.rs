@@ -191,6 +191,7 @@ fn execute_create_command(
             // it might be an empty/invalid repository - recreate it
             if bare_repo_path.exists() {
                 println!("Repository exists but is invalid, recreating...");
+                // Remove both .git directory and any existing worktree directory
                 std::fs::remove_dir_all(&bare_repo_path).map_err(|err| {
                     anyhow!(
                         "Failed to remove invalid repository at {}: {}",
@@ -198,6 +199,15 @@ fn execute_create_command(
                         err
                     )
                 })?;
+                if worktree_path.exists() {
+                    std::fs::remove_dir_all(&worktree_path).map_err(|err| {
+                        anyhow!(
+                            "Failed to remove existing worktree directory at {}: {}",
+                            worktree_path.display(),
+                            err
+                        )
+                    })?;
+                }
                 create_bare_repository(&bare_repo_path).map_err(|err| {
                     anyhow!(
                         "Failed to recreate bare repository at {}: {}",
