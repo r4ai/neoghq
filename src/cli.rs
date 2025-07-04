@@ -32,7 +32,7 @@ pub enum RepoCommands {
     /// Create a new repository and initialize worktree
     Create {
         /// Repository in format 'user/repo' or full URL
-        repo: String,
+        repository: String,
         /// Specify worktree name (default: main)
         #[arg(long)]
         worktree: Option<String>,
@@ -40,7 +40,7 @@ pub enum RepoCommands {
     /// Navigate to repository directory
     Switch {
         /// Repository in format 'user/repo'
-        repo: String,
+        repository: String,
         /// Switch to specific worktree
         #[arg(long)]
         worktree: Option<String>,

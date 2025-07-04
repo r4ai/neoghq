@@ -145,14 +145,23 @@ mod tests {
         fs::create_dir_all(&repo_path).unwrap();
         fs::create_dir_all(repo_path.join("main")).unwrap();
 
-        let result = execute_with_config(repo_name.to_string(), None, config);
+        // Capture stdout to verify the correct path is printed
+        let output = std::process::Command::new("cargo")
+            .args(["run", "--", "repo", "switch", repo_name])
+            .env("NEOGHQ_ROOT", temp_dir.path())
+            .output()
+            .expect("Failed to execute command");
 
-        assert!(result.is_ok());
+        assert!(output.status.success());
 
-        // Verify that the path was output to stdout
-        // This test should check that the correct path is printed
+        let stdout = String::from_utf8(output.stdout).unwrap();
         let expected_path = repo_path.join("main");
+        assert!(stdout.trim().ends_with("main"));
         assert!(expected_path.exists());
+
+        // Also test the function directly for unit testing
+        let result = execute_with_config(repo_name.to_string(), None, config);
+        assert!(result.is_ok());
     }
 
     #[test]

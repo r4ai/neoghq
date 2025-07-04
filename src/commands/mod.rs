@@ -19,8 +19,14 @@ pub fn execute_command(command: Commands, config: Config) -> Result<()> {
 fn execute_repo_command(command: RepoCommands, config: Config) -> Result<()> {
     match command {
         RepoCommands::Clone { url } => repo::clone::execute(config, url, None),
-        RepoCommands::Create { repo, worktree } => repo::create::execute(repo, worktree),
-        RepoCommands::Switch { repo, worktree } => repo::switch::execute(repo, worktree),
+        RepoCommands::Create {
+            repository,
+            worktree,
+        } => repo::create::execute(repository, worktree),
+        RepoCommands::Switch {
+            repository,
+            worktree,
+        } => repo::switch::execute(repository, worktree),
         RepoCommands::List { show_worktrees } => repo::list::execute(show_worktrees),
     }
 }
@@ -66,7 +72,7 @@ mod tests {
 
         let command = Commands::Repo {
             command: RepoCommands::Create {
-                repo: "https://github.com/user/repo".to_string(),
+                repository: "https://github.com/user/repo".to_string(),
                 worktree: None,
             },
         };
@@ -84,7 +90,7 @@ mod tests {
 
         let command = Commands::Repo {
             command: RepoCommands::Switch {
-                repo: "nonexistent/repo".to_string(),
+                repository: "nonexistent/repo".to_string(),
                 worktree: None,
             },
         };
@@ -199,7 +205,7 @@ mod tests {
         };
 
         let command = RepoCommands::Create {
-            repo: "https://github.com/user/repo".to_string(),
+            repository: "https://github.com/user/repo".to_string(),
             worktree: None,
         };
 
@@ -216,7 +222,7 @@ mod tests {
         };
 
         let command = RepoCommands::Switch {
-            repo: "nonexistent/repo".to_string(),
+            repository: "nonexistent/repo".to_string(),
             worktree: None,
         };
 
