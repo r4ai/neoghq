@@ -1,7 +1,271 @@
-use anyhow::Result;
+use crate::config::{Config, Env};
+use anyhow::{Result, anyhow};
+use git2::Repository;
+use std::fs;
+use std::path::Path;
 
 pub fn execute(url: String) -> Result<()> {
-    println!("Create command for repository: {url}");
-    println!("repo create functionality not yet implemented");
+    let env = Env::load()?;
+    let config = Config::load(env)?;
+
+    execute_create_command(url, config)
+}
+
+fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
+    use url::Url;
+    let url = url.strip_suffix(".git").unwrap_or(url);
+
+    // Handle HTTPS URLs
+    if url.starts_with("https://") {
+        let url = Url::parse(url).map_err(|_| anyhow!("Invalid URL format: {url}"))?;
+        let path = url.path().strip_prefix("/").unwrap_or(url.path());
+        let path_parts: Vec<&str> = path.split('/').collect();
+        let host = url
+            .host_str()
+            .ok_or_else(|| anyhow!("Missing host in URL"))?;
+        let owner = path_parts
+            .first()
+            .ok_or_else(|| anyhow!("Missing owner in URL: {url}"))?;
+        let repo = path_parts
+            .get(1)
+            .ok_or_else(|| anyhow!("Missing repo in URL: {url}"))?;
+        return Ok((host.to_string(), owner.to_string(), repo.to_string()));
+    }
+
+    // Handle SSH URLs
+    if url.starts_with("git@") {
+        let url_without_prefix = url.strip_prefix("git@").unwrap();
+        let parts: Vec<&str> = url_without_prefix.split(':').collect();
+        let host = parts
+            .first()
+            .ok_or_else(|| anyhow!("Missing host in URL: {url}"))?;
+        let owner_and_repo = parts
+            .get(1)
+            .ok_or_else(|| anyhow!("Missing owner and repo in URL: {url}"))?
+            .split("/")
+            .collect::<Vec<_>>();
+        let owner = owner_and_repo
+            .first()
+            .ok_or_else(|| anyhow!("Missing owner in URL: {url}"))?;
+        let repo = owner_and_repo
+            .get(1)
+            .ok_or_else(|| anyhow!("Missing repo in URL: {url}"))?;
+        return Ok((host.to_string(), owner.to_string(), repo.to_string()));
+    }
+
+    Err(anyhow!("Invalid URL format"))
+}
+
+fn create_bare_repository(path: &Path) -> Result<()> {
+    use git2::{Signature, Time};
+
+    // Create parent directories if they don't exist
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    // Initialize bare repository
+    let repo = Repository::init_bare(path)?;
+
+    // Create initial commit with empty tree
+    let signature = Signature::new("neoghq", "neoghq@example.com", &Time::new(0, 0))?;
+    let tree_id = repo.treebuilder(None)?.write()?;
+    let tree = repo.find_tree(tree_id)?;
+
+    let _initial_commit = repo.commit(
+        Some("refs/heads/main"),
+        &signature,
+        &signature,
+        "Initial commit",
+        &tree,
+        &[],
+    )?;
+
     Ok(())
+}
+
+fn create_worktree(bare_repo_path: &Path, worktree_path: &Path, branch: &str) -> Result<()> {
+    // Create parent directories if they don't exist
+    if let Some(parent) = worktree_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    // Open the bare repository
+    let repo = Repository::open(bare_repo_path)?;
+
+    // Create worktree
+    let branch_ref = format!("refs/heads/{branch}");
+    let mut opts = git2::WorktreeAddOptions::new();
+
+    if let Ok(reference) = repo.find_reference(&branch_ref) {
+        opts.reference(Some(&reference));
+        repo.worktree(branch, worktree_path, Some(&opts))?;
+    } else {
+        repo.worktree(branch, worktree_path, Some(&opts))?;
+    }
+
+    Ok(())
+}
+
+fn execute_create_command(url: String, config: Config) -> Result<()> {
+    // Parse the repository URL to extract host, owner, and repo
+    let (host, owner, repo) = parse_repository_url(&url)?;
+
+    // Use the root from config
+    let root = config.root;
+
+    // Create repository and worktree paths
+    let repo_dir = root.join(&host).join(&owner).join(&repo);
+    let bare_repo_path = repo_dir.join(".git");
+    let worktree_path = repo_dir.join("main");
+
+    // Create the bare repository if it doesn't exist
+    if !bare_repo_path.exists() {
+        println!("Creating bare repository at {}", bare_repo_path.display());
+        create_bare_repository(&bare_repo_path)?;
+    }
+
+    // Create the main worktree if it doesn't exist
+    if !worktree_path.exists() {
+        println!("Creating main worktree at {}", worktree_path.display());
+        create_worktree(&bare_repo_path, &worktree_path, "main")?;
+    }
+
+    println!("Repository created successfully: {}", repo_dir.display());
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_parse_repository_url_https() {
+        let url = "https://github.com/user/repo.git";
+        let result = parse_repository_url(url);
+
+        assert!(result.is_ok());
+        let (host, owner, repo) = result.unwrap();
+        assert_eq!(host, "github.com");
+        assert_eq!(owner, "user");
+        assert_eq!(repo, "repo");
+    }
+
+    #[test]
+    fn test_parse_repository_url_ssh() {
+        let url = "git@github.com:user/repo.git";
+        let result = parse_repository_url(url);
+
+        assert!(result.is_ok());
+        let (host, owner, repo) = result.unwrap();
+        assert_eq!(host, "github.com");
+        assert_eq!(owner, "user");
+        assert_eq!(repo, "repo");
+    }
+
+    #[test]
+    fn test_parse_repository_url_invalid() {
+        let url = "invalid-url";
+        let result = parse_repository_url(url);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_bare_repository() {
+        let temp_dir = TempDir::new().unwrap();
+        let bare_repo_path = temp_dir.path().join("test.git");
+
+        let result = create_bare_repository(&bare_repo_path);
+
+        assert!(result.is_ok());
+        assert!(bare_repo_path.exists());
+        assert!(bare_repo_path.join("HEAD").exists());
+        assert!(bare_repo_path.join("refs").exists());
+        assert!(bare_repo_path.join("refs/heads/main").exists());
+    }
+
+    #[test]
+    fn test_create_worktree_with_existing_branch() {
+        let temp_dir = TempDir::new().unwrap();
+        let bare_repo_path = temp_dir.path().join("test.git");
+        let worktree_path = temp_dir.path().join("main");
+
+        // First create a bare repository
+        create_bare_repository(&bare_repo_path).unwrap();
+
+        // Now test worktree creation
+        let result = create_worktree(&bare_repo_path, &worktree_path, "main");
+
+        assert!(result.is_ok());
+        assert!(worktree_path.exists());
+    }
+
+    #[test]
+    fn test_execute_repo_create_success() {
+        let temp_dir = TempDir::new().unwrap();
+        let url = "https://github.com/user/new-repo".to_string();
+
+        // Set up environment variables for test
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
+        let result = execute(url.clone());
+
+        assert!(result.is_ok());
+
+        // Verify that the repository structure was created
+        let repo_path = temp_dir
+            .path()
+            .join("github.com")
+            .join("user")
+            .join("new-repo");
+        assert!(repo_path.exists());
+        assert!(repo_path.join(".git").exists()); // bare repo
+        assert!(repo_path.join("main").exists()); // main branch worktree
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
+    }
+
+    #[test]
+    fn test_execute_repo_create_invalid_url() {
+        let url = "invalid-url".to_string();
+        let result = execute(url);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_repo_create_existing_repo() {
+        let temp_dir = TempDir::new().unwrap();
+        let url = "https://github.com/user/existing-repo".to_string();
+
+        // Set up environment variables for test
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
+        // Create existing repo structure
+        let repo_path = temp_dir
+            .path()
+            .join("github.com")
+            .join("user")
+            .join("existing-repo");
+        fs::create_dir_all(&repo_path).unwrap();
+        fs::create_dir_all(repo_path.join(".git")).unwrap();
+
+        let result = execute(url.clone());
+
+        // Should not fail if repo already exists
+        assert!(result.is_ok());
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
+    }
 }
