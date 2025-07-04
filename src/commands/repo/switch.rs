@@ -262,6 +262,71 @@ mod tests {
     }
 
     #[test]
+    fn test_execute_repo_switch_with_specific_worktree() {
+        let temp_dir = TempDir::new().unwrap();
+        let repo_name = "user/test-repo";
+
+        // Set up environment variables for test
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
+        // Create repository structure with multiple worktrees
+        let repo_path = temp_dir
+            .path()
+            .join("github.com")
+            .join("user")
+            .join("test-repo");
+        fs::create_dir_all(&repo_path).unwrap();
+        fs::create_dir_all(repo_path.join("main")).unwrap();
+        fs::create_dir_all(repo_path.join("dev")).unwrap();
+        fs::create_dir_all(repo_path.join("feature")).unwrap();
+
+        let result = execute(repo_name.to_string(), Some("dev".to_string()));
+
+        assert!(result.is_ok());
+
+        // Verify that the dev worktree path exists
+        let expected_path = repo_path.join("dev");
+        assert!(expected_path.exists());
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
+    }
+
+    #[test]
+    fn test_execute_repo_switch_with_nonexistent_worktree() {
+        let temp_dir = TempDir::new().unwrap();
+        let repo_name = "user/test-repo";
+
+        // Set up environment variables for test
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
+        // Create repository structure with only main worktree
+        let repo_path = temp_dir
+            .path()
+            .join("github.com")
+            .join("user")
+            .join("test-repo");
+        fs::create_dir_all(&repo_path).unwrap();
+        fs::create_dir_all(repo_path.join("main")).unwrap();
+
+        let result = execute(repo_name.to_string(), Some("nonexistent".to_string()));
+
+        // Should fail when specified worktree doesn't exist
+        assert!(result.is_err());
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
+    }
+
+    #[test]
     fn test_find_default_worktree_no_worktrees() {
         let temp_dir = TempDir::new().unwrap();
         let repo_path = temp_dir.path().join("empty-repo");

@@ -159,7 +159,18 @@ fn execute_create_command(
     // Create the bare repository if it doesn't exist
     if !bare_repo_path.exists() {
         println!("Creating bare repository at {}", bare_repo_path.display());
-        create_bare_repository(&bare_repo_path)?;
+        create_bare_repository(&bare_repo_path).map_err(|e| {
+            anyhow!(
+                "Failed to create bare repository at {}: {}",
+                bare_repo_path.display(),
+                e
+            )
+        })?;
+    } else {
+        println!(
+            "Bare repository already exists at {}",
+            bare_repo_path.display()
+        );
     }
 
     // Create the worktree if it doesn't exist
@@ -175,13 +186,43 @@ fn execute_create_command(
             // it might be an empty/invalid repository - recreate it
             if bare_repo_path.exists() {
                 println!("Repository exists but is invalid, recreating...");
-                std::fs::remove_dir_all(&bare_repo_path)?;
-                create_bare_repository(&bare_repo_path)?;
-                create_worktree(&bare_repo_path, &worktree_path, &branch_name)?;
+                std::fs::remove_dir_all(&bare_repo_path).map_err(|err| {
+                    anyhow!(
+                        "Failed to remove invalid repository at {}: {}",
+                        bare_repo_path.display(),
+                        err
+                    )
+                })?;
+                create_bare_repository(&bare_repo_path).map_err(|err| {
+                    anyhow!(
+                        "Failed to recreate bare repository at {}: {}",
+                        bare_repo_path.display(),
+                        err
+                    )
+                })?;
+                create_worktree(&bare_repo_path, &worktree_path, &branch_name).map_err(|err| {
+                    anyhow!(
+                        "Failed to create {} worktree at {}: {}",
+                        branch_name,
+                        worktree_path.display(),
+                        err
+                    )
+                })?;
             } else {
-                return Err(e);
+                return Err(anyhow!(
+                    "Failed to create {} worktree at {}: {}",
+                    branch_name,
+                    worktree_path.display(),
+                    e
+                ));
             }
         }
+    } else {
+        println!(
+            "Worktree '{}' already exists at {}",
+            branch_name,
+            worktree_path.display()
+        );
     }
 
     println!("Repository created successfully: {}", repo_dir.display());
@@ -320,5 +361,91 @@ mod tests {
         unsafe {
             std::env::remove_var("NEOGHQ_ROOT");
         }
+    }
+
+    #[test]
+    fn test_execute_repo_create_user_repo_format() {
+        let temp_dir = TempDir::new().unwrap();
+        let repo = "user/test-repo".to_string();
+
+        // Set up environment variables for test
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
+        let result = execute(repo.clone(), None);
+
+        assert!(result.is_ok());
+
+        // Verify that the repository structure was created
+        let repo_path = temp_dir
+            .path()
+            .join("github.com")
+            .join("user")
+            .join("test-repo");
+        assert!(repo_path.exists());
+        assert!(repo_path.join(".git").exists()); // bare repo
+        assert!(repo_path.join("main").exists()); // main branch worktree
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
+    }
+
+    #[test]
+    fn test_execute_repo_create_with_custom_worktree() {
+        let temp_dir = TempDir::new().unwrap();
+        let repo = "user/test-repo".to_string();
+        let worktree = Some("dev".to_string());
+
+        // Set up environment variables for test
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
+        let result = execute(repo.clone(), worktree);
+
+        assert!(result.is_ok());
+
+        // Verify that the repository structure was created with custom worktree
+        let repo_path = temp_dir
+            .path()
+            .join("github.com")
+            .join("user")
+            .join("test-repo");
+        assert!(repo_path.exists());
+        assert!(repo_path.join(".git").exists()); // bare repo
+        assert!(repo_path.join("dev").exists()); // dev branch worktree
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
+    }
+
+    #[test]
+    fn test_parse_repo_name_valid() {
+        let result = parse_repo_name("user/repo");
+        assert!(result.is_ok());
+        let (host, owner, repo) = result.unwrap();
+        assert_eq!(host, "github.com");
+        assert_eq!(owner, "user");
+        assert_eq!(repo, "repo");
+    }
+
+    #[test]
+    fn test_parse_repo_name_invalid() {
+        let result = parse_repo_name("invalid-format");
+        assert!(result.is_err());
+
+        let result = parse_repo_name("too/many/parts");
+        assert!(result.is_err());
+
+        let result = parse_repo_name("/missing-owner");
+        assert!(result.is_err());
+
+        let result = parse_repo_name("missing-repo/");
+        assert!(result.is_err());
     }
 }

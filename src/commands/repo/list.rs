@@ -293,4 +293,105 @@ mod tests {
             assert!(result.is_ok());
         }
     }
+
+    mod list_repositories_tests {
+        use super::*;
+
+        #[test]
+        fn test_list_repositories_with_empty_root() {
+            let temp_dir = TempDir::new().unwrap();
+            let result = list_repositories(&temp_dir.path().to_path_buf());
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_list_repositories_with_structure() {
+            let temp_dir = TempDir::new().unwrap();
+            let root = temp_dir.path();
+
+            // Create directory structure: github.com/user/repo1, github.com/user/repo2
+            let repo1_path = root.join("github.com").join("user").join("repo1");
+            let repo2_path = root.join("github.com").join("user").join("repo2");
+            fs::create_dir_all(&repo1_path).unwrap();
+            fs::create_dir_all(&repo2_path).unwrap();
+            fs::create_dir_all(repo1_path.join(".git")).unwrap();
+            fs::create_dir_all(repo2_path.join(".git")).unwrap();
+
+            let result = list_repositories(&root.to_path_buf());
+            assert!(result.is_ok());
+        }
+    }
+
+    mod execute_enhanced_tests {
+        use super::*;
+
+        #[test]
+        fn test_execute_with_show_worktrees_true() {
+            let result = execute(true);
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_execute_with_show_worktrees_false() {
+            let result = execute(false);
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_execute_list_repositories_mode() {
+            let temp_dir = TempDir::new().unwrap();
+
+            // Set up environment variables for test
+            unsafe {
+                std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+            }
+
+            // Create repository structure
+            let repo_path = temp_dir
+                .path()
+                .join("github.com")
+                .join("user")
+                .join("test-repo");
+            fs::create_dir_all(&repo_path).unwrap();
+            fs::create_dir_all(repo_path.join("main")).unwrap();
+            fs::create_dir_all(repo_path.join(".git")).unwrap();
+
+            let result = execute(false); // List repositories mode
+            assert!(result.is_ok());
+
+            // Clean up
+            unsafe {
+                std::env::remove_var("NEOGHQ_ROOT");
+            }
+        }
+
+        #[test]
+        fn test_execute_show_worktrees_mode() {
+            let temp_dir = TempDir::new().unwrap();
+
+            // Set up environment variables for test
+            unsafe {
+                std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+            }
+
+            // Create repository structure
+            let repo_path = temp_dir
+                .path()
+                .join("github.com")
+                .join("user")
+                .join("test-repo");
+            fs::create_dir_all(&repo_path).unwrap();
+            fs::create_dir_all(repo_path.join("main")).unwrap();
+            fs::create_dir_all(repo_path.join("dev")).unwrap();
+            fs::create_dir_all(repo_path.join(".git")).unwrap();
+
+            let result = execute(true); // Show worktrees mode
+            assert!(result.is_ok());
+
+            // Clean up
+            unsafe {
+                std::env::remove_var("NEOGHQ_ROOT");
+            }
+        }
+    }
 }
