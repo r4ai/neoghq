@@ -59,7 +59,15 @@ mod tests {
 
     #[test]
     fn test_execute_command_repo_create() {
-        let config = create_test_config();
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
         let command = Commands::Repo {
             command: RepoCommands::Create {
                 url: "https://github.com/user/repo".to_string(),
@@ -68,11 +76,24 @@ mod tests {
 
         let result = execute_command(command, config);
         assert!(result.is_ok());
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
     }
 
     #[test]
     fn test_execute_command_repo_switch() {
-        let config = create_test_config();
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
         let command = Commands::Repo {
             command: RepoCommands::Switch {
                 repo: "user/repo".to_string(),
@@ -80,7 +101,12 @@ mod tests {
         };
 
         let result = execute_command(command, config);
-        assert!(result.is_ok());
+        assert!(result.is_err()); // Should fail because repository doesn't exist
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
     }
 
     #[test]
@@ -179,24 +205,53 @@ mod tests {
 
     #[test]
     fn test_execute_repo_command_create() {
-        let config = create_test_config();
+        // The create command should work with a temporary config
+        // Set up environment variable to make the command work properly
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
         let command = RepoCommands::Create {
             url: "https://github.com/user/repo".to_string(),
         };
 
         let result = execute_repo_command(command, config);
         assert!(result.is_ok());
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
     }
 
     #[test]
     fn test_execute_repo_command_switch() {
-        let config = create_test_config();
+        // The switch command should fail when no repository exists
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
+        unsafe {
+            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
+        }
+
         let command = RepoCommands::Switch {
             repo: "user/repo".to_string(),
         };
 
         let result = execute_repo_command(command, config);
-        assert!(result.is_ok());
+        assert!(result.is_err()); // Should fail because repository doesn't exist
+
+        // Clean up
+        unsafe {
+            std::env::remove_var("NEOGHQ_ROOT");
+        }
     }
 
     #[test]

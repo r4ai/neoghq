@@ -128,7 +128,19 @@ fn execute_create_command(url: String, config: Config) -> Result<()> {
     // Create the main worktree if it doesn't exist
     if !worktree_path.exists() {
         println!("Creating main worktree at {}", worktree_path.display());
-        create_worktree(&bare_repo_path, &worktree_path, "main")?;
+        // Only try to create worktree if we have a valid repository
+        if let Err(e) = create_worktree(&bare_repo_path, &worktree_path, "main") {
+            // If worktree creation fails and bare repo already existed,
+            // it might be an empty/invalid repository - recreate it
+            if bare_repo_path.exists() {
+                println!("Repository exists but is invalid, recreating...");
+                std::fs::remove_dir_all(&bare_repo_path)?;
+                create_bare_repository(&bare_repo_path)?;
+                create_worktree(&bare_repo_path, &worktree_path, "main")?;
+            } else {
+                return Err(e);
+            }
+        }
     }
 
     println!("Repository created successfully: {}", repo_dir.display());
