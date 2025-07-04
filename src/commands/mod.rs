@@ -40,11 +40,12 @@ fn execute_worktree_command(command: WorktreeCommands, _config: Config) -> Resul
 mod tests {
     use super::*;
     use crate::config::Config;
-    use std::path::PathBuf;
+    
 
     fn create_test_config() -> Config {
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
         Config {
-            root: PathBuf::from("/tmp/test"),
+            root: temp_dir.path().to_path_buf(),
         }
     }
 
