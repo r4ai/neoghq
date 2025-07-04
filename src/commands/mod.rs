@@ -64,10 +64,6 @@ mod tests {
             root: temp_dir.path().to_path_buf(),
         };
 
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
-
         let command = Commands::Repo {
             command: RepoCommands::Create {
                 repo: "https://github.com/user/repo".to_string(),
@@ -77,11 +73,6 @@ mod tests {
 
         let result = execute_command(command, config);
         assert!(result.is_ok());
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
@@ -90,10 +81,6 @@ mod tests {
         let config = Config {
             root: temp_dir.path().to_path_buf(),
         };
-
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
 
         let command = Commands::Repo {
             command: RepoCommands::Switch {
@@ -104,11 +91,6 @@ mod tests {
 
         let result = execute_command(command, config);
         assert!(result.is_err()); // Should fail because repository doesn't exist
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
@@ -216,10 +198,6 @@ mod tests {
             root: temp_dir.path().to_path_buf(),
         };
 
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
-
         let command = RepoCommands::Create {
             repo: "https://github.com/user/repo".to_string(),
             worktree: None,
@@ -227,11 +205,6 @@ mod tests {
 
         let result = execute_repo_command(command, config);
         assert!(result.is_ok());
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
@@ -242,10 +215,6 @@ mod tests {
             root: temp_dir.path().to_path_buf(),
         };
 
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
-
         let command = RepoCommands::Switch {
             repo: "user/repo".to_string(),
             worktree: None,
@@ -253,11 +222,6 @@ mod tests {
 
         let result = execute_repo_command(command, config);
         assert!(result.is_err()); // Should fail because repository doesn't exist
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]

@@ -6,6 +6,10 @@ pub fn execute(show_worktrees: bool) -> Result<()> {
     let env = Env::load()?;
     let config = Config::load(env)?;
 
+    execute_with_config(show_worktrees, config)
+}
+
+pub fn execute_with_config(show_worktrees: bool, config: Config) -> Result<()> {
     if show_worktrees {
         list_worktrees(&config.root)?;
     } else {
@@ -341,10 +345,9 @@ mod tests {
         fn test_execute_list_repositories_mode() {
             let temp_dir = TempDir::new().unwrap();
 
-            // Set up environment variables for test
-            unsafe {
-                std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-            }
+            let config = Config {
+                root: temp_dir.path().to_path_buf(),
+            };
 
             // Create repository structure
             let repo_path = temp_dir
@@ -356,23 +359,17 @@ mod tests {
             fs::create_dir_all(repo_path.join("main")).unwrap();
             fs::create_dir_all(repo_path.join(".git")).unwrap();
 
-            let result = execute(false); // List repositories mode
+            let result = execute_with_config(false, config); // List repositories mode
             assert!(result.is_ok());
-
-            // Clean up
-            unsafe {
-                std::env::remove_var("NEOGHQ_ROOT");
-            }
         }
 
         #[test]
         fn test_execute_show_worktrees_mode() {
             let temp_dir = TempDir::new().unwrap();
 
-            // Set up environment variables for test
-            unsafe {
-                std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-            }
+            let config = Config {
+                root: temp_dir.path().to_path_buf(),
+            };
 
             // Create repository structure
             let repo_path = temp_dir
@@ -385,13 +382,8 @@ mod tests {
             fs::create_dir_all(repo_path.join("dev")).unwrap();
             fs::create_dir_all(repo_path.join(".git")).unwrap();
 
-            let result = execute(true); // Show worktrees mode
+            let result = execute_with_config(true, config); // Show worktrees mode
             assert!(result.is_ok());
-
-            // Clean up
-            unsafe {
-                std::env::remove_var("NEOGHQ_ROOT");
-            }
         }
     }
 }
