@@ -10,6 +10,10 @@ pub fn execute(repo: String, worktree: Option<String>) -> Result<()> {
     execute_switch_command(repo, worktree, config)
 }
 
+pub fn execute_with_config(repo: String, worktree: Option<String>, config: Config) -> Result<()> {
+    execute_switch_command(repo, worktree, config)
+}
+
 fn parse_repo_name(repo: &str) -> Result<(String, String)> {
     let parts: Vec<&str> = repo.split('/').collect();
     if parts.len() != 2 {
@@ -128,10 +132,9 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let repo_name = "user/test-repo";
 
-        // Set up environment variables for test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
 
         // Create repository structure
         let repo_path = temp_dir
@@ -142,7 +145,7 @@ mod tests {
         fs::create_dir_all(&repo_path).unwrap();
         fs::create_dir_all(repo_path.join("main")).unwrap();
 
-        let result = execute(repo_name.to_string(), None);
+        let result = execute_with_config(repo_name.to_string(), None, config);
 
         assert!(result.is_ok());
 
@@ -150,11 +153,6 @@ mod tests {
         // This test should check that the correct path is printed
         let expected_path = repo_path.join("main");
         assert!(expected_path.exists());
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
@@ -162,26 +160,24 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let repo_name = "user/nonexistent-repo";
 
-        // Set up environment variables for test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
 
-        let result = execute(repo_name.to_string(), None);
+        let result = execute_with_config(repo_name.to_string(), None, config);
 
         // Should fail when repository doesn't exist
         assert!(result.is_err());
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
     fn test_execute_repo_switch_invalid_repo_format() {
         let repo_name = "invalid-format";
-        let result = execute(repo_name.to_string(), None);
+        let temp_dir = TempDir::new().unwrap();
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+        let result = execute_with_config(repo_name.to_string(), None, config);
         assert!(result.is_err());
     }
 
@@ -266,10 +262,9 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let repo_name = "user/test-repo";
 
-        // Set up environment variables for test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
 
         // Create repository structure with multiple worktrees
         let repo_path = temp_dir
@@ -282,18 +277,13 @@ mod tests {
         fs::create_dir_all(repo_path.join("dev")).unwrap();
         fs::create_dir_all(repo_path.join("feature")).unwrap();
 
-        let result = execute(repo_name.to_string(), Some("dev".to_string()));
+        let result = execute_with_config(repo_name.to_string(), Some("dev".to_string()), config);
 
         assert!(result.is_ok());
 
         // Verify that the dev worktree path exists
         let expected_path = repo_path.join("dev");
         assert!(expected_path.exists());
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
@@ -301,10 +291,9 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let repo_name = "user/test-repo";
 
-        // Set up environment variables for test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
 
         // Create repository structure with only main worktree
         let repo_path = temp_dir
@@ -315,15 +304,14 @@ mod tests {
         fs::create_dir_all(&repo_path).unwrap();
         fs::create_dir_all(repo_path.join("main")).unwrap();
 
-        let result = execute(repo_name.to_string(), Some("nonexistent".to_string()));
+        let result = execute_with_config(
+            repo_name.to_string(),
+            Some("nonexistent".to_string()),
+            config,
+        );
 
         // Should fail when specified worktree doesn't exist
         assert!(result.is_err());
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
