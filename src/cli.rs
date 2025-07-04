@@ -30,11 +30,27 @@ pub enum RepoCommands {
     /// Clone repository and create default branch worktree
     Clone { url: String },
     /// Create a new repository and initialize worktree
-    Create { url: String },
+    Create {
+        /// Repository in format 'user/repo' or full URL
+        repo: String,
+        /// Specify worktree name (default: main)
+        #[arg(long)]
+        worktree: Option<String>,
+    },
     /// Navigate to repository directory
-    Switch { repo: String },
+    Switch {
+        /// Repository in format 'user/repo'
+        repo: String,
+        /// Switch to specific worktree
+        #[arg(long)]
+        worktree: Option<String>,
+    },
     /// List all managed repositories
-    List,
+    List {
+        /// Show worktrees for each repository
+        #[arg(long)]
+        show_worktrees: bool,
+    },
 }
 
 #[derive(Subcommand)]

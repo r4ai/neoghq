@@ -19,9 +19,9 @@ pub fn execute_command(command: Commands, config: Config) -> Result<()> {
 fn execute_repo_command(command: RepoCommands, config: Config) -> Result<()> {
     match command {
         RepoCommands::Clone { url } => repo::clone::execute(config, url, None),
-        RepoCommands::Create { url } => repo::create::execute(url),
-        RepoCommands::Switch { repo } => repo::switch::execute(repo),
-        RepoCommands::List => repo::list::execute(),
+        RepoCommands::Create { repo, worktree } => repo::create::execute(repo, worktree),
+        RepoCommands::Switch { repo, worktree } => repo::switch::execute(repo, worktree),
+        RepoCommands::List { show_worktrees } => repo::list::execute(show_worktrees),
     }
 }
 
