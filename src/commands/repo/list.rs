@@ -2,11 +2,65 @@ use crate::config::{Config, Env};
 use anyhow::Result;
 use std::path::PathBuf;
 
-pub fn execute() -> Result<()> {
+pub fn execute(show_worktrees: bool) -> Result<()> {
     let env = Env::load()?;
     let config = Config::load(env)?;
 
-    list_worktrees(&config.root)?;
+    if show_worktrees {
+        list_worktrees(&config.root)?;
+    } else {
+        list_repositories(&config.root)?;
+    }
+
+    Ok(())
+}
+
+fn list_repositories(root: &PathBuf) -> Result<()> {
+    use std::fs;
+
+    if !root.exists() {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            list_host_repositories(&path)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn list_host_repositories(host_path: &PathBuf) -> Result<()> {
+    use std::fs;
+
+    for entry in fs::read_dir(host_path)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            list_user_repositories(&path)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn list_user_repositories(user_path: &PathBuf) -> Result<()> {
+    use std::fs;
+
+    for entry in fs::read_dir(user_path)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            // This is a repository directory - print it
+            println!("{}", path.display());
+        }
+    }
 
     Ok(())
 }
@@ -86,7 +140,7 @@ mod tests {
 
         #[test]
         fn test_list_command_executes_successfully() {
-            let result = execute();
+            let result = execute(false);
             assert!(result.is_ok());
         }
 
@@ -97,7 +151,7 @@ mod tests {
                 std::env::remove_var("NEOGHQ_ROOT");
             }
 
-            let result = execute();
+            let result = execute(false);
             assert!(result.is_ok());
 
             unsafe {

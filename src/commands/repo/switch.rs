@@ -3,11 +3,11 @@ use anyhow::{Result, anyhow};
 use std::fs;
 use std::path::Path;
 
-pub fn execute(repo: String) -> Result<()> {
+pub fn execute(repo: String, worktree: Option<String>) -> Result<()> {
     let env = Env::load()?;
     let config = Config::load(env)?;
 
-    execute_switch_command(repo, config)
+    execute_switch_command(repo, worktree, config)
 }
 
 fn parse_repo_name(repo: &str) -> Result<(String, String)> {
@@ -89,15 +89,26 @@ fn find_default_worktree(repo_path: &Path) -> Result<std::path::PathBuf> {
     ))
 }
 
-fn execute_switch_command(repo: String, config: Config) -> Result<()> {
+fn execute_switch_command(repo: String, worktree: Option<String>, config: Config) -> Result<()> {
     // Parse the repository name
     let (owner, repo_name) = parse_repo_name(&repo)?;
 
     // Find the repository path
     let repo_path = find_repository_path(&config.root, &owner, &repo_name)?;
 
-    // Find the default worktree
-    let worktree_path = find_default_worktree(&repo_path)?;
+    // Find the worktree path
+    let worktree_path = if let Some(worktree_name) = worktree {
+        let path = repo_path.join(&worktree_name);
+        if !path.exists() {
+            return Err(anyhow!(
+                "Worktree '{}' not found in repository",
+                worktree_name
+            ));
+        }
+        path
+    } else {
+        find_default_worktree(&repo_path)?
+    };
 
     // Output the path - this is what tools like shell functions will capture
     println!("{}", worktree_path.display());
@@ -131,7 +142,7 @@ mod tests {
         fs::create_dir_all(&repo_path).unwrap();
         fs::create_dir_all(repo_path.join("main")).unwrap();
 
-        let result = execute(repo_name.to_string());
+        let result = execute(repo_name.to_string(), None);
 
         assert!(result.is_ok());
 
@@ -156,7 +167,7 @@ mod tests {
             std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
         }
 
-        let result = execute(repo_name.to_string());
+        let result = execute(repo_name.to_string(), None);
 
         // Should fail when repository doesn't exist
         assert!(result.is_err());
@@ -170,7 +181,7 @@ mod tests {
     #[test]
     fn test_execute_repo_switch_invalid_repo_format() {
         let repo_name = "invalid-format";
-        let result = execute(repo_name.to_string());
+        let result = execute(repo_name.to_string(), None);
         assert!(result.is_err());
     }
 

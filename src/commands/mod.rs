@@ -70,7 +70,8 @@ mod tests {
 
         let command = Commands::Repo {
             command: RepoCommands::Create {
-                url: "https://github.com/user/repo".to_string(),
+                repo: "https://github.com/user/repo".to_string(),
+                worktree: None,
             },
         };
 
@@ -97,6 +98,7 @@ mod tests {
         let command = Commands::Repo {
             command: RepoCommands::Switch {
                 repo: "user/repo".to_string(),
+                worktree: None,
             },
         };
 
@@ -113,7 +115,9 @@ mod tests {
     fn test_execute_command_repo_list() {
         let config = create_test_config();
         let command = Commands::Repo {
-            command: RepoCommands::List,
+            command: RepoCommands::List {
+                show_worktrees: false,
+            },
         };
 
         let result = execute_command(command, config);
@@ -217,7 +221,8 @@ mod tests {
         }
 
         let command = RepoCommands::Create {
-            url: "https://github.com/user/repo".to_string(),
+            repo: "https://github.com/user/repo".to_string(),
+            worktree: None,
         };
 
         let result = execute_repo_command(command, config);
@@ -243,6 +248,7 @@ mod tests {
 
         let command = RepoCommands::Switch {
             repo: "user/repo".to_string(),
+            worktree: None,
         };
 
         let result = execute_repo_command(command, config);
@@ -257,7 +263,9 @@ mod tests {
     #[test]
     fn test_execute_repo_command_list() {
         let config = create_test_config();
-        let command = RepoCommands::List;
+        let command = RepoCommands::List {
+            show_worktrees: false,
+        };
 
         let result = execute_repo_command(command, config);
         assert!(result.is_ok());

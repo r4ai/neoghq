@@ -4,11 +4,37 @@ use git2::Repository;
 use std::fs;
 use std::path::Path;
 
-pub fn execute(url: String) -> Result<()> {
+pub fn execute(repo: String, worktree: Option<String>) -> Result<()> {
     let env = Env::load()?;
     let config = Config::load(env)?;
 
-    execute_create_command(url, config)
+    execute_create_command(repo, worktree, config)
+}
+
+fn parse_repo_name(repo: &str) -> Result<(String, String, String)> {
+    let parts: Vec<&str> = repo.split('/').collect();
+    if parts.len() != 2 {
+        return Err(anyhow!(
+            "Invalid repository format. Expected 'owner/repo', got: {}",
+            repo
+        ));
+    }
+
+    let owner = parts[0];
+    let repo_name = parts[1];
+
+    if owner.is_empty() || repo_name.is_empty() {
+        return Err(anyhow!(
+            "Invalid repository format. Owner and repo name cannot be empty"
+        ));
+    }
+
+    // Default to github.com for user/repo format
+    Ok((
+        "github.com".to_string(),
+        owner.to_string(),
+        repo_name.to_string(),
+    ))
 }
 
 fn parse_repository_url(url: &str) -> Result<(String, String, String)> {
@@ -107,9 +133,19 @@ fn create_worktree(bare_repo_path: &Path, worktree_path: &Path, branch: &str) ->
     Ok(())
 }
 
-fn execute_create_command(url: String, config: Config) -> Result<()> {
-    // Parse the repository URL to extract host, owner, and repo
-    let (host, owner, repo) = parse_repository_url(&url)?;
+fn execute_create_command(
+    repo_input: String,
+    worktree: Option<String>,
+    config: Config,
+) -> Result<()> {
+    // For now, support both URL and user/repo format
+    let (host, owner, repo) = if repo_input.contains("://") || repo_input.starts_with("git@") {
+        // Parse as URL
+        parse_repository_url(&repo_input)?
+    } else {
+        // Parse as user/repo format
+        parse_repo_name(&repo_input)?
+    };
 
     // Use the root from config
     let root = config.root;
@@ -117,7 +153,8 @@ fn execute_create_command(url: String, config: Config) -> Result<()> {
     // Create repository and worktree paths
     let repo_dir = root.join(&host).join(&owner).join(&repo);
     let bare_repo_path = repo_dir.join(".git");
-    let worktree_path = repo_dir.join("main");
+    let branch_name = worktree.unwrap_or_else(|| "main".to_string());
+    let worktree_path = repo_dir.join(&branch_name);
 
     // Create the bare repository if it doesn't exist
     if !bare_repo_path.exists() {
@@ -125,18 +162,22 @@ fn execute_create_command(url: String, config: Config) -> Result<()> {
         create_bare_repository(&bare_repo_path)?;
     }
 
-    // Create the main worktree if it doesn't exist
+    // Create the worktree if it doesn't exist
     if !worktree_path.exists() {
-        println!("Creating main worktree at {}", worktree_path.display());
+        println!(
+            "Creating {} worktree at {}",
+            branch_name,
+            worktree_path.display()
+        );
         // Only try to create worktree if we have a valid repository
-        if let Err(e) = create_worktree(&bare_repo_path, &worktree_path, "main") {
+        if let Err(e) = create_worktree(&bare_repo_path, &worktree_path, &branch_name) {
             // If worktree creation fails and bare repo already existed,
             // it might be an empty/invalid repository - recreate it
             if bare_repo_path.exists() {
                 println!("Repository exists but is invalid, recreating...");
                 std::fs::remove_dir_all(&bare_repo_path)?;
                 create_bare_repository(&bare_repo_path)?;
-                create_worktree(&bare_repo_path, &worktree_path, "main")?;
+                create_worktree(&bare_repo_path, &worktree_path, &branch_name)?;
             } else {
                 return Err(e);
             }
@@ -224,7 +265,7 @@ mod tests {
             std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
         }
 
-        let result = execute(url.clone());
+        let result = execute(url.clone(), None);
 
         assert!(result.is_ok());
 
@@ -247,7 +288,7 @@ mod tests {
     #[test]
     fn test_execute_repo_create_invalid_url() {
         let url = "invalid-url".to_string();
-        let result = execute(url);
+        let result = execute(url, None);
         assert!(result.is_err());
     }
 
@@ -270,7 +311,7 @@ mod tests {
         fs::create_dir_all(&repo_path).unwrap();
         fs::create_dir_all(repo_path.join(".git")).unwrap();
 
-        let result = execute(url.clone());
+        let result = execute(url.clone(), None);
 
         // Should not fail if repo already exists
         assert!(result.is_ok());
