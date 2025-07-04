@@ -10,6 +10,7 @@ pub fn execute(repo: String, worktree: Option<String>) -> Result<()> {
     execute_switch_command(repo, worktree, config)
 }
 
+#[cfg(test)]
 pub fn execute_with_config(repo: String, worktree: Option<String>, config: Config) -> Result<()> {
     execute_switch_command(repo, worktree, config)
 }
