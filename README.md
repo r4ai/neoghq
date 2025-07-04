@@ -46,9 +46,12 @@ neoghq help
 # Repository operations
 neoghq repo clone https://github.com/user/repo       # Clone repository and create default worktree
 neoghq repo clone git@github.com:user/repo.git       # Clone with SSH URL
-neoghq repo create https://github.com/user/repo      # Create new repository structure
+neoghq repo create user/repo                         # Create a new repository (base and default branch)
+neoghq repo create user/repo --worktree dev          # Create a new repository with a specific worktree
 neoghq repo switch user/repo                         # Navigate to repository directory
+neoghq repo switch user/repo --worktree dev          # Switch to a specific branch worktree
 neoghq repo list                                     # List all managed repositories
+neoghq repo list --show-worktrees                    # List repositories with their worktrees
 
 # Worktree operations
 neoghq worktree list                                 # List all worktrees
@@ -69,13 +72,13 @@ neoghq root                                          # Show neoghq root director
 neoghq repo clone https://github.com/user/awesome-project
 
 # Navigate to the repository
-cd $(neoghq repo switch user/awesome-project)
+neoghq repo switch user/awesome-project
 
 # Create a new worktree for a feature branch
 neoghq worktree create feature/add-authentication
 
 # Switch to the new worktree
-cd $(neoghq worktree switch feature/add-authentication)
+neoghq worktree switch feature/add-authentication
 
 # Work on your feature...
 # When done, remove the worktree
