@@ -11,6 +11,10 @@ pub fn execute(repo: String, worktree: Option<String>) -> Result<()> {
     execute_create_command(repo, worktree, config)
 }
 
+pub fn execute_with_config(repo: String, worktree: Option<String>, config: Config) -> Result<()> {
+    execute_create_command(repo, worktree, config)
+}
+
 fn parse_repo_name(repo: &str) -> Result<(String, String, String)> {
     let parts: Vec<&str> = repo.split('/').collect();
     if parts.len() != 2 {
@@ -301,12 +305,11 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let url = "https://github.com/user/new-repo".to_string();
 
-        // Set up environment variables for test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
 
-        let result = execute(url.clone(), None);
+        let result = execute_with_config(url.clone(), None, config);
 
         assert!(result.is_ok());
 
@@ -319,17 +322,16 @@ mod tests {
         assert!(repo_path.exists());
         assert!(repo_path.join(".git").exists()); // bare repo
         assert!(repo_path.join("main").exists()); // main branch worktree
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
     fn test_execute_repo_create_invalid_url() {
         let url = "invalid-url".to_string();
-        let result = execute(url, None);
+        let temp_dir = TempDir::new().unwrap();
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+        let result = execute_with_config(url, None, config);
         assert!(result.is_err());
     }
 
@@ -338,10 +340,9 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let url = "https://github.com/user/existing-repo".to_string();
 
-        // Set up environment variables for test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
 
         // Create existing repo structure
         let repo_path = temp_dir
@@ -352,15 +353,10 @@ mod tests {
         fs::create_dir_all(&repo_path).unwrap();
         fs::create_dir_all(repo_path.join(".git")).unwrap();
 
-        let result = execute(url.clone(), None);
+        let result = execute_with_config(url.clone(), None, config);
 
         // Should not fail if repo already exists
         assert!(result.is_ok());
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
@@ -368,12 +364,11 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let repo = "user/test-repo".to_string();
 
-        // Set up environment variables for test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
 
-        let result = execute(repo.clone(), None);
+        let result = execute_with_config(repo.clone(), None, config);
 
         assert!(result.is_ok());
 
@@ -386,11 +381,6 @@ mod tests {
         assert!(repo_path.exists());
         assert!(repo_path.join(".git").exists()); // bare repo
         assert!(repo_path.join("main").exists()); // main branch worktree
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
@@ -399,12 +389,11 @@ mod tests {
         let repo = "user/test-repo".to_string();
         let worktree = Some("dev".to_string());
 
-        // Set up environment variables for test
-        unsafe {
-            std::env::set_var("NEOGHQ_ROOT", temp_dir.path());
-        }
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
 
-        let result = execute(repo.clone(), worktree);
+        let result = execute_with_config(repo.clone(), worktree, config);
 
         assert!(result.is_ok());
 
@@ -417,11 +406,6 @@ mod tests {
         assert!(repo_path.exists());
         assert!(repo_path.join(".git").exists()); // bare repo
         assert!(repo_path.join("dev").exists()); // dev branch worktree
-
-        // Clean up
-        unsafe {
-            std::env::remove_var("NEOGHQ_ROOT");
-        }
     }
 
     #[test]
