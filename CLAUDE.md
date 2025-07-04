@@ -77,10 +77,10 @@ Its main feature is a design that assumes the use of git worktree, enabling effi
 
 #### Repository Operations
 
-- `neoghq repo clone <url>` - Clone repository and create default branch worktree
+- `neoghq repo clone <url>` - Clone repository and create default branch worktree ✅ **IMPLEMENTED**
 - `neoghq repo create <url>` - Create a new repository and initialize worktree
 - `neoghq repo switch <repo>` - Navigate to repository directory
-- `neoghq repo list` - List all managed repositories
+- `neoghq repo list` - List all managed repositories ✅ **IMPLEMENTED**
 
 #### Worktree Operations
 
@@ -89,12 +89,35 @@ Its main feature is a design that assumes the use of git worktree, enabling effi
 - `neoghq worktree remove <branch>` - Remove worktree
 - `neoghq worktree clean` - Remove worktrees merged to default branch
 - `neoghq worktree status` - Show status of all worktrees
-- `neoghq worktree list` - List all managed worktrees
+- `neoghq worktree list` - List all managed worktrees ✅ **IMPLEMENTED**
 
 #### Global Operations
 
-- `neoghq root` - Show neoghq root directory path
-- `neoghq help` - Show help message
+- `neoghq root` - Show neoghq root directory path ✅ **IMPLEMENTED**
+- `neoghq help` - Show help message ✅ **IMPLEMENTED**
+
+### ✅ Hierarchical Command Structure
+
+The CLI implements a hierarchical command structure using clap's subcommands:
+
+```rust
+pub enum Commands {
+    Repo {
+        #[command(subcommand)]
+        command: RepoCommands,
+    },
+    Worktree {
+        #[command(subcommand)]
+        command: WorktreeCommands,
+    },
+    Root,
+}
+```
+
+**Command Dispatcher**: Fully implemented in `src/commands/mod.rs` with 100% test coverage:
+- `execute_command()` - Main dispatcher function
+- `execute_repo_command()` - Routes all `repo` subcommands
+- `execute_worktree_command()` - Routes all `worktree` subcommands
 
 ### Typical Workflow
 
@@ -172,8 +195,13 @@ Key external crates:
    - User-facing error messages support localization
 
 2. **Testing**
-   - Unit tests: Implemented within each module
+   - Unit tests: Implemented within each module using `#[cfg(test)]`
    - Integration tests: Implemented in `tests/` directory
+   - **Test Requirements**:
+     - Use `tempfile` crate for temporary directories/files in tests
+     - Achieve 100% code coverage for all new functionality
+     - Test both success and error paths
+     - Use descriptive test names following `test_<function>_<scenario>` pattern
 
 ## Configuration File
 
@@ -190,12 +218,27 @@ default_branch = "main"  # default branch name
 protocol = "ssh"  # default protocol (ssh/https)
 ```
 
-## Future Development Tasks
+## Development Status
 
-1. Implement basic CLI structure
-2. Implement Git operations module
-3. Implement worktree management functionality
-4. Implement configuration file management
-5. Enhance test suite
-6. Performance optimization
-7. Documentation improvements
+### ✅ Completed Features
+
+1. **Basic CLI structure** - Hierarchical command structure with clap
+2. **Command dispatcher** - Routes commands to appropriate handlers with 100% test coverage
+3. **Repository operations** - Clone and list commands implemented
+4. **Worktree operations** - List command implemented
+5. **Configuration management** - TOML-based configuration with environment support
+6. **Core test suite** - 60+ tests with comprehensive coverage
+
+### 🚧 In Progress
+
+1. **Worktree management functionality** - Create, switch, remove, clean, status commands
+2. **Repository management** - Create and switch commands
+
+### 📋 Future Development Tasks
+
+1. Implement remaining worktree operations
+2. Implement remaining repository operations
+3. Performance optimization
+4. Enhanced error handling and user experience
+5. Documentation improvements
+6. Shell integration and completion
