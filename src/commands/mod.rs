@@ -40,7 +40,6 @@ fn execute_worktree_command(command: WorktreeCommands, _config: Config) -> Resul
 mod tests {
     use super::*;
     use crate::config::Config;
-    
 
     fn create_test_config() -> Config {
         let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
