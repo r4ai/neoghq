@@ -84,7 +84,7 @@ mod tests {
 
         let command = Commands::Repo {
             command: RepoCommands::Switch {
-                repo: "user/repo".to_string(),
+                repo: "nonexistent/repo".to_string(),
                 worktree: None,
             },
         };
@@ -216,7 +216,7 @@ mod tests {
         };
 
         let command = RepoCommands::Switch {
-            repo: "user/repo".to_string(),
+            repo: "nonexistent/repo".to_string(),
             worktree: None,
         };
 

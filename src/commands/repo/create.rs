@@ -432,4 +432,57 @@ mod tests {
         let result = parse_repo_name("missing-repo/");
         assert!(result.is_err());
     }
+
+    // NEW CLI OPTIONS TESTS
+    #[test]
+    fn test_worktree_option_validation() {
+        let temp_dir = TempDir::new().unwrap();
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
+        // Test with different worktree names
+        let test_cases = vec!["dev", "feature", "hotfix", "release-1.0"];
+
+        for worktree_name in test_cases {
+            let result = execute_with_config(
+                "user/test-repo".to_string(),
+                Some(worktree_name.to_string()),
+                config.clone(),
+            );
+            assert!(result.is_ok(), "Failed with worktree name: {worktree_name}");
+
+            // Verify worktree directory was created
+            let repo_path = temp_dir
+                .path()
+                .join("github.com")
+                .join("user")
+                .join("test-repo");
+            assert!(repo_path.join(worktree_name).exists());
+        }
+    }
+
+    #[test]
+    fn test_user_repo_format_various_combinations() {
+        let test_cases = vec![
+            ("owner/simple", "github.com", "owner", "simple"),
+            (
+                "user-name/repo-name",
+                "github.com",
+                "user-name",
+                "repo-name",
+            ),
+            ("org123/project456", "github.com", "org123", "project456"),
+        ];
+
+        for (input, expected_host, expected_owner, expected_repo) in test_cases {
+            let result = parse_repo_name(input);
+            assert!(result.is_ok(), "Failed to parse: {input}");
+
+            let (host, owner, repo) = result.unwrap();
+            assert_eq!(host, expected_host);
+            assert_eq!(owner, expected_owner);
+            assert_eq!(repo, expected_repo);
+        }
+    }
 }

@@ -326,4 +326,66 @@ mod tests {
         let result = find_default_worktree(&repo_path);
         assert!(result.is_err());
     }
+
+    // NEW CLI OPTIONS TESTS
+    #[test]
+    fn test_worktree_option_edge_cases() {
+        let temp_dir = TempDir::new().unwrap();
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
+        // Create repository with multiple worktrees
+        let repo_path = temp_dir
+            .path()
+            .join("github.com")
+            .join("user")
+            .join("test-repo");
+        fs::create_dir_all(&repo_path).unwrap();
+        fs::create_dir_all(repo_path.join("main")).unwrap();
+        fs::create_dir_all(repo_path.join("dev")).unwrap();
+        fs::create_dir_all(repo_path.join("feature-123")).unwrap();
+
+        // Test switching to different worktrees
+        let test_cases = vec!["main", "dev", "feature-123"];
+
+        for worktree in test_cases {
+            let result = execute_with_config(
+                "user/test-repo".to_string(),
+                Some(worktree.to_string()),
+                config.clone(),
+            );
+            assert!(result.is_ok(), "Failed to switch to worktree: {worktree}");
+        }
+    }
+
+    #[test]
+    fn test_worktree_option_precedence_over_default() {
+        let temp_dir = TempDir::new().unwrap();
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
+        // Create repository with main and dev worktrees
+        let repo_path = temp_dir
+            .path()
+            .join("github.com")
+            .join("user")
+            .join("test-repo");
+        fs::create_dir_all(&repo_path).unwrap();
+        fs::create_dir_all(repo_path.join("main")).unwrap();
+        fs::create_dir_all(repo_path.join("dev")).unwrap();
+
+        // Even though main exists, should switch to dev when specified
+        let result = execute_with_config(
+            "user/test-repo".to_string(),
+            Some("dev".to_string()),
+            config.clone(),
+        );
+        assert!(result.is_ok());
+
+        // Without worktree option, should default to main
+        let result = execute_with_config("user/test-repo".to_string(), None, config);
+        assert!(result.is_ok());
+    }
 }

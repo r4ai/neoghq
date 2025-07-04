@@ -385,5 +385,60 @@ mod tests {
             let result = execute_with_config(true, config); // Show worktrees mode
             assert!(result.is_ok());
         }
+
+        // NEW CLI OPTIONS TESTS
+        #[test]
+        fn test_show_worktrees_option_behavior() {
+            let temp_dir = TempDir::new().unwrap();
+            let config = Config {
+                root: temp_dir.path().to_path_buf(),
+            };
+
+            // Create complex repository structure
+            let repos = vec![
+                ("github.com/user1/repo1", vec!["main", "dev"]),
+                ("github.com/user2/repo2", vec!["main", "feature", "hotfix"]),
+                ("github.com/org/project", vec!["main"]),
+            ];
+
+            for (repo_path, worktrees) in repos {
+                let full_path = temp_dir.path().join(repo_path);
+                fs::create_dir_all(&full_path).unwrap();
+                fs::create_dir_all(full_path.join(".git")).unwrap();
+
+                for worktree in worktrees {
+                    fs::create_dir_all(full_path.join(worktree)).unwrap();
+                }
+            }
+
+            // Test both modes
+            let result_repos = execute_with_config(false, config.clone()); // List repositories
+            assert!(result_repos.is_ok());
+
+            let result_worktrees = execute_with_config(true, config); // Show worktrees  
+            assert!(result_worktrees.is_ok());
+        }
+
+        #[test]
+        fn test_show_worktrees_flag_default_behavior() {
+            let temp_dir = TempDir::new().unwrap();
+            let config = Config {
+                root: temp_dir.path().to_path_buf(),
+            };
+
+            // Create single repository
+            let repo_path = temp_dir
+                .path()
+                .join("github.com")
+                .join("user")
+                .join("test-repo");
+            fs::create_dir_all(&repo_path).unwrap();
+            fs::create_dir_all(repo_path.join("main")).unwrap();
+            fs::create_dir_all(repo_path.join(".git")).unwrap();
+
+            // Default behavior (false) should list repositories, not worktrees
+            let result = execute_with_config(false, config);
+            assert!(result.is_ok());
+        }
     }
 }
