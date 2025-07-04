@@ -197,19 +197,17 @@ mod tests {
 
     #[test]
     fn test_execute_repo_command_create() {
-        // The create command should work with a temporary config
-        // Set up environment variable to make the command work properly
+        // Test create command directly with a temporary config
         let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
         let config = Config {
             root: temp_dir.path().to_path_buf(),
         };
 
-        let command = RepoCommands::Create {
-            repository: "https://github.com/user/repo".to_string(),
-            worktree: None,
-        };
-
-        let result = execute_repo_command(command, config);
+        let result = repo::create::execute_with_config(
+            "https://github.com/user/repo".to_string(),
+            None,
+            config,
+        );
         assert!(result.is_ok());
     }
 
