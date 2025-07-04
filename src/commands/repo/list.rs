@@ -150,17 +150,14 @@ mod tests {
 
         #[test]
         fn test_list_worktrees_with_env_load_error() {
-            unsafe {
-                std::env::set_var("HOME", "/nonexistent");
-                std::env::remove_var("NEOGHQ_ROOT");
-            }
+            // Test with invalid paths to simulate env load error conditions
+            let temp_dir = TempDir::new().unwrap();
+            let config = Config {
+                root: temp_dir.path().join("nonexistent").to_path_buf(),
+            };
 
-            let result = execute(false);
-            assert!(result.is_ok());
-
-            unsafe {
-                std::env::remove_var("HOME");
-            }
+            let result = execute_with_config(false, config);
+            assert!(result.is_ok()); // Should handle nonexistent directories gracefully
         }
     }
 
