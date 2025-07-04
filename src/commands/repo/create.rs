@@ -99,7 +99,11 @@ fn create_bare_repository(path: &Path) -> Result<()> {
     let repo = Repository::init_bare(path)?;
 
     // Create initial commit with empty tree
-    let signature = Signature::new("neoghq", "neoghq@example.com", &Time::new(0, 0))?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+    let signature = Signature::new("neoghq", "neoghq@example.com", &Time::new(now, 0))?;
     let tree_id = repo.treebuilder(None)?.write()?;
     let tree = repo.find_tree(tree_id)?;
 

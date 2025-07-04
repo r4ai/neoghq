@@ -27,6 +27,9 @@ cargo install --git https://github.com/r4ai/neoghq
 # Clone a repository
 neoghq repo clone https://github.com/user/repo
 
+# Or create a new repository
+neoghq repo create user/repo
+
 # Navigate to the repository (outputs path for shell integration)
 cd $(neoghq repo switch user/repo)
 
