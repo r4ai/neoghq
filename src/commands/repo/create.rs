@@ -386,7 +386,7 @@ mod tests {
     #[test]
     fn test_execute_repo_create_with_custom_worktree() {
         let temp_dir = TempDir::new().unwrap();
-        let repo = "user/test-repo".to_string();
+        let repo = "user/custom-worktree-test".to_string();
         let worktree = Some("dev".to_string());
 
         let config = Config {
@@ -402,7 +402,7 @@ mod tests {
             .path()
             .join("github.com")
             .join("user")
-            .join("test-repo");
+            .join("custom-worktree-test");
         assert!(repo_path.exists());
         assert!(repo_path.join(".git").exists()); // bare repo
         assert!(repo_path.join("dev").exists()); // dev branch worktree
@@ -436,17 +436,17 @@ mod tests {
     // NEW CLI OPTIONS TESTS
     #[test]
     fn test_worktree_option_validation() {
-        let temp_dir = TempDir::new().unwrap();
-        let config = Config {
-            root: temp_dir.path().to_path_buf(),
-        };
-
-        // Test with different worktree names
+        // Test with different worktree names, each in separate directories
         let test_cases = vec!["dev", "feature", "hotfix", "release-1.0"];
 
         for worktree_name in test_cases {
+            let temp_dir = TempDir::new().unwrap();
+            let config = Config {
+                root: temp_dir.path().to_path_buf(),
+            };
+
             let result = execute_with_config(
-                "user/test-repo".to_string(),
+                format!("user/test-repo-{worktree_name}"),
                 Some(worktree_name.to_string()),
                 config.clone(),
             );
@@ -457,7 +457,7 @@ mod tests {
                 .path()
                 .join("github.com")
                 .join("user")
-                .join("test-repo");
+                .join(format!("test-repo-{worktree_name}"));
             assert!(repo_path.join(worktree_name).exists());
         }
     }
