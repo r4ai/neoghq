@@ -414,9 +414,6 @@ mod tests {
 
         let result = execute_with_config(repo.clone(), worktree, config);
 
-        if let Err(e) = &result {
-            eprintln!("Test failed with error: {e}");
-        }
         assert!(result.is_ok());
 
         // Verify that the repository structure was created with custom worktree
@@ -472,9 +469,6 @@ mod tests {
                 Some(worktree_name.to_string()),
                 config.clone(),
             );
-            if let Err(e) = &result {
-                eprintln!("Test failed with worktree name '{worktree_name}': {e}");
-            }
             assert!(result.is_ok(), "Failed with worktree name: {worktree_name}");
 
             // Verify worktree directory was created
