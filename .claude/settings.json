@@ -10,7 +10,7 @@
           },
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path | select(endswith(\".rs\"))' | cargo clippy --fix --allow-dirty --allow-staged -- -W clippy::all"
+            "command": "jq -r '.tool_input.file_path | select(endswith(\".rs\"))' | cargo clippy --fix --allow-dirty --allow-staged -- -D warnings"
           }
         ]
       }

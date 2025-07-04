@@ -19,9 +19,15 @@ pub fn execute_command(command: Commands, config: Config) -> Result<()> {
 fn execute_repo_command(command: RepoCommands, config: Config) -> Result<()> {
     match command {
         RepoCommands::Clone { url } => repo::clone::execute(config, url, None),
-        RepoCommands::Create { url } => repo::create::execute(url),
-        RepoCommands::Switch { repo } => repo::switch::execute(repo),
-        RepoCommands::List => repo::list::execute(),
+        RepoCommands::Create {
+            repository,
+            worktree,
+        } => repo::create::execute(repository, worktree),
+        RepoCommands::Switch {
+            repository,
+            worktree,
+        } => repo::switch::execute(repository, worktree),
+        RepoCommands::List { show_worktrees } => repo::list::execute(show_worktrees),
     }
 }
 
@@ -59,10 +65,15 @@ mod tests {
 
     #[test]
     fn test_execute_command_repo_create() {
-        let config = create_test_config();
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
         let command = Commands::Repo {
             command: RepoCommands::Create {
-                url: "https://github.com/user/repo".to_string(),
+                repository: "https://github.com/user/repo".to_string(),
+                worktree: None,
             },
         };
 
@@ -72,22 +83,29 @@ mod tests {
 
     #[test]
     fn test_execute_command_repo_switch() {
-        let config = create_test_config();
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
         let command = Commands::Repo {
             command: RepoCommands::Switch {
-                repo: "user/repo".to_string(),
+                repository: "nonexistent/repo".to_string(),
+                worktree: None,
             },
         };
 
         let result = execute_command(command, config);
-        assert!(result.is_ok());
+        assert!(result.is_err()); // Should fail because repository doesn't exist
     }
 
     #[test]
     fn test_execute_command_repo_list() {
         let config = create_test_config();
         let command = Commands::Repo {
-            command: RepoCommands::List,
+            command: RepoCommands::List {
+                show_worktrees: false,
+            },
         };
 
         let result = execute_command(command, config);
@@ -179,30 +197,43 @@ mod tests {
 
     #[test]
     fn test_execute_repo_command_create() {
-        let config = create_test_config();
-        let command = RepoCommands::Create {
-            url: "https://github.com/user/repo".to_string(),
+        // Test create command directly with a temporary config
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
         };
 
-        let result = execute_repo_command(command, config);
+        let result = repo::create::execute_with_config(
+            "https://github.com/user/repo".to_string(),
+            None,
+            config,
+        );
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_execute_repo_command_switch() {
-        let config = create_test_config();
+        // The switch command should fail when no repository exists
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
+        let config = Config {
+            root: temp_dir.path().to_path_buf(),
+        };
+
         let command = RepoCommands::Switch {
-            repo: "user/repo".to_string(),
+            repository: "nonexistent/repo".to_string(),
+            worktree: None,
         };
 
         let result = execute_repo_command(command, config);
-        assert!(result.is_ok());
+        assert!(result.is_err()); // Should fail because repository doesn't exist
     }
 
     #[test]
     fn test_execute_repo_command_list() {
         let config = create_test_config();
-        let command = RepoCommands::List;
+        let command = RepoCommands::List {
+            show_worktrees: false,
+        };
 
         let result = execute_repo_command(command, config);
         assert!(result.is_ok());

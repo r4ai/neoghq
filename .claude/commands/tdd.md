@@ -1,0 +1,4 @@
+FOLLOW t-wada style TDD: RED -> GREEN -> REFACTOR.
+COMMIT at EACH phase. ALWAYS.
+
+$ARGUMENTS
