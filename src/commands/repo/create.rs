@@ -129,10 +129,18 @@ fn create_worktree(bare_repo_path: &Path, worktree_path: &Path, branch: &str) ->
     let mut opts = git2::WorktreeAddOptions::new();
 
     if let Ok(reference) = repo.find_reference(&branch_ref) {
+        // Branch exists, use it directly
         opts.reference(Some(&reference));
         repo.worktree(branch, worktree_path, Some(&opts))?;
     } else {
-        repo.worktree(branch, worktree_path, Some(&opts))?;
+        // Branch doesn't exist, create from main branch
+        if let Ok(main_ref) = repo.find_reference("refs/heads/main") {
+            opts.reference(Some(&main_ref));
+            repo.worktree(branch, worktree_path, Some(&opts))?;
+        } else {
+            // Fallback: let git2 handle it (might create from HEAD)
+            repo.worktree(branch, worktree_path, Some(&opts))?;
+        }
     }
 
     Ok(())
